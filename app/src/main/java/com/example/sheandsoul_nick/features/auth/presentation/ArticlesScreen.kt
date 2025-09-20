@@ -25,17 +25,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-//import coil.compose.AsyncImage
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage // <-- FIX 2: Import the real AsyncImage from the Coil library
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.data.remote.ArticleCategoryDto
 import com.example.sheandsoul_nick.data.remote.ArticleDto
@@ -45,14 +44,20 @@ import com.example.sheandsoul_nick.features.articles.DataState
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticlesScreen(
+    authViewModel: AuthViewModel,
     onNavigateToHome: () -> Unit,
     onNavigateToCommunity: () -> Unit,
     onNavigateToMusic: () -> Unit,
     onNavigateToProfile: () -> Unit,
-    onArticleClicked: (Long) -> Unit,
-    articleViewModel: ArticleViewModel = viewModel() // Get the ViewModel instance
+    onArticleClicked: (Long) -> Unit
 ) {
+    // FIX 1: Correctly initialize the ViewModel using the factory.
+    // The old, incorrect initialization was removed.
+    val articleViewModel: ArticleViewModel = viewModel(
+        factory = ArticleViewModelFactory(authViewModel)
+    )
     val categoriesState by articleViewModel.categories.observeAsState()
+
 
     Scaffold(
         topBar = { ArticlesTopAppBar() },
@@ -79,15 +84,19 @@ fun ArticlesScreen(
                     CircularProgressIndicator()
                 }
                 is DataState.Success -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 16.dp)
-                    ) {
-                        items(state.data) { category ->
-                            ArticleCategoryRow(
-                                category = category,
-                                onArticleClicked = onArticleClicked
-                            )
+                    if (state.data.isEmpty()) {
+                        Text(text = "No articles found.")
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 16.dp)
+                        ) {
+                            items(state.data) { category ->
+                                ArticleCategoryRow(
+                                    category = category,
+                                    onArticleClicked = onArticleClicked
+                                )
+                            }
                         }
                     }
                 }
@@ -170,7 +179,7 @@ fun ArticleCard(article: ArticleDto, modifier: Modifier = Modifier) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            // Use an image loading library like Coil for network images
+            // FIX 2: This now uses the real AsyncImage from Coil to load from the URL.
             AsyncImage(
                 model = article.imageUrl,
                 contentDescription = article.title,
@@ -178,7 +187,8 @@ fun ArticleCard(article: ArticleDto, modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .height(120.dp),
                 contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = R.drawable.ic_article_workout) // Add a placeholder
+                placeholder = painterResource(id = R.drawable.ic_article_workout), // Placeholder while loading
+                error = painterResource(id = R.drawable.ic_article_workout) // Image to show if loading fails
             )
             Text(
                 text = article.title,
@@ -192,16 +202,7 @@ fun ArticleCard(article: ArticleDto, modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-fun AsyncImage(
-    model: String?,
-    contentDescription: String,
-    modifier: Modifier,
-    contentScale: ContentScale,
-    placeholder: Painter
-) {
-    TODO("Not yet implemented")
-}
+// FIX 2: The empty TODO function has been removed.
 
 @Composable
 fun AppBottomNavBar(
@@ -262,7 +263,9 @@ fun BottomNavIcon(screen: String, isSelected: Boolean) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ArticlesScreenPreview() {
+    // FIX 3: Provide a blank AuthViewModel for the preview to work.
     ArticlesScreen(
+        authViewModel = AuthViewModel(),
         onNavigateToHome = {},
         onNavigateToCommunity = {},
         onNavigateToMusic = {},

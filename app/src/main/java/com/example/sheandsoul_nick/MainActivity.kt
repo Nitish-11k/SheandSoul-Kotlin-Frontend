@@ -161,7 +161,8 @@ class MainActivity : ComponentActivity() {
                             onArticleClicked = { articleId ->
                                 navController.navigate(Screen.ArticleDetail.createRoute(articleId))
                             },
-                            onNavigateToMusic = {}
+                            onNavigateToMusic = {},
+                            authViewModel = authViewModel
                         )
                     }
                     composable(

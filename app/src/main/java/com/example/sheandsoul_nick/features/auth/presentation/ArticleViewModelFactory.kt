@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sheandsoul_nick.data.remote.ApiService
 import com.example.sheandsoul_nick.data.remote.ArticleCategoryDto
-import com.example.sheandsoul_nick.data.remote.ArticleDto
 import com.example.sheandsoul_nick.data.remote.RetrofitClient
 import com.example.sheandsoul_nick.features.auth.presentation.AuthViewModel
 import kotlinx.coroutines.launch
@@ -18,13 +17,10 @@ sealed class DataState<T> {
     class Loading<T> : DataState<T>()
 }
 
-/**
- * ViewModel for handling article data.
- * It requires an AuthViewModel to make authenticated API calls.
- */
+// MODIFY THE CONSTRUCTOR here to accept AuthViewModel
 class ArticleViewModel(private val authViewModel: AuthViewModel) : ViewModel() {
-    // FIX 1: The apiService is now initialized with the AUTHENTICATED AuthViewModel
-    // which contains the user's login token.
+
+    // This line now correctly uses the passed-in authViewModel
     private val apiService: ApiService = RetrofitClient.getInstance(authViewModel)
 
     private val _categories = MutableLiveData<DataState<List<ArticleCategoryDto>>>()
@@ -35,33 +31,17 @@ class ArticleViewModel(private val authViewModel: AuthViewModel) : ViewModel() {
     }
 
     private fun fetchArticleCategories() {
-        _categories.value = DataState.Loading()
+        _categories.value = DataState.Loading<List<ArticleCategoryDto>>()
         viewModelScope.launch {
             try {
-                // This call is now authenticated
                 val response = apiService.getArticles()
                 if (response.isSuccessful && response.body() != null) {
-                    val articles: List<ArticleDto> = response.body()!!
-
-                    // FIX 2: Since the backend sends a flat list of articles,
-                    // we wrap them in a single category for the UI to display.
-                    if (articles.isNotEmpty()) {
-                        val articleCategory = ArticleCategoryDto(
-                            name = "Recommended For You",
-                            articles = articles
-                        )
-                        // Post a list containing our single category
-                        _categories.postValue(DataState.Success(listOf(articleCategory)))
-                    } else {
-                        // Handle the case where there are no articles
-                        _categories.postValue(DataState.Success(emptyList()))
-                    }
-
+                    _categories.postValue(DataState.Success(response.body()!!))
                 } else {
-                    _categories.postValue(DataState.Error("Failed to load articles: ${response.message()}"))
+                    _categories.postValue(DataState.Error<List<ArticleCategoryDto>>("Failed to load articles"))
                 }
             } catch (e: Exception) {
-                _categories.postValue(DataState.Error(e.message ?: "An unknown error occurred"))
+                _categories.postValue(DataState.Error<List<ArticleCategoryDto>>(e.message ?: "An error occurred"))
             }
         }
     }

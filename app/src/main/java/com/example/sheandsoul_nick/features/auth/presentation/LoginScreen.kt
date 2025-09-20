@@ -1,6 +1,7 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
 import android.app.Activity
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -58,17 +59,30 @@ fun LoginScreen(
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        Log.d("GoogleSignIn", "Result received. Result Code: ${result.resultCode}") // 👈 ADD LOG
+
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)!!
-                val idToken = account.idToken!!
-                authViewModel.signInWithGoogle(idToken)
+                val idToken = account.idToken
+
+                if (idToken != null) {
+                    Log.d("GoogleSignIn", "SUCCESS! Got idToken.") // 👈 ADD LOG
+                    authViewModel.signInWithGoogle(idToken)
+                } else {
+                    Log.e("GoogleSignIn", "ERROR: idToken is null!") // 👈 ADD LOG
+                    isLoading = false
+                }
+
             } catch (e: ApiException) {
+                // 👇 THIS IS THE MOST IMPORTANT LOG!
+                Log.e("GoogleSignIn", "ApiException: statusCode=${e.statusCode} message=${e.message}")
                 isLoading = false
-                Toast.makeText(context, "Google Sign-In failed.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Google Sign-In failed. Code: ${e.statusCode}", Toast.LENGTH_LONG).show()
             }
         } else {
+            Log.w("GoogleSignIn", "Result was not OK. User might have cancelled.") // 👈 ADD LOG
             isLoading = false
         }
     }

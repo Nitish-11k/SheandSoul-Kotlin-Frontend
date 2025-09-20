@@ -27,8 +27,8 @@ interface ApiService {
     @POST("api/google") // The endpoint path on your backend
     suspend fun signInWithGoogle(@Body request: GoogleSignInRequest): Response<AuthResponse>
 
-    @GET("api/article")
-    suspend fun getArticles(): Response<List<ArticleCategoryDto>>
+    @GET("api/article/get") // Corrected the endpoint
+    suspend fun getArticles(): Response<List<ArticleDto>>
 
     @GET("api/article/{id}")
     suspend fun getArticleById(@Path("id") articleId: Long): Response<ArticleDto>

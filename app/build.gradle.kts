@@ -67,6 +67,8 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     implementation("com.google.firebase:firebase-analytics")
+    // Add this line with your other implementation dependencies
+    implementation("io.coil-kt:coil-compose:2.6.0")
     implementation(libs.play.services.auth)
     implementation(libs.ui)
     testImplementation(libs.junit)

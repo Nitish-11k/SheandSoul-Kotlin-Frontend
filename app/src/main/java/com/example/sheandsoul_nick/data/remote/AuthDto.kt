@@ -30,7 +30,13 @@ data class AuthResponse(
     val token: String?,
 
     @SerializedName("token_type")
-    val tokenType: String?
+    val tokenType: String?,
+
+    @SerializedName("name")
+    val name: String?,
+
+    @SerializedName("nickname")
+    val nickname: String?
 )
 
 data class OtpVerificationRequest(
