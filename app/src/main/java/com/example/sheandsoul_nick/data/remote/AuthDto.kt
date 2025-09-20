@@ -1,5 +1,7 @@
 package com.example.sheandsoul_nick.data.remote
 
+import com.google.gson.annotations.SerializedName
+
 // Data to SEND when signing up
 data class SignUpRequest(
     val email: String,
@@ -14,9 +16,21 @@ data class LoginRequest(
 
 // A generic response you might get from the backend
 data class AuthResponse(
-    val token: String?,
+    @SerializedName("message")
+    val message: String,
+
+    @SerializedName("user_id")
     val userId: Long?,
-    val message: String
+
+    @SerializedName("email")
+    val email: String?,
+
+    // The key change: map "access_token" from the backend to the "token" variable
+    @SerializedName("access_token")
+    val token: String?,
+
+    @SerializedName("token_type")
+    val tokenType: String?
 )
 
 data class OtpVerificationRequest(
@@ -32,6 +46,7 @@ data class CreateProfileRequest(
 //    val userId: Long,
     val name: String,
     val nickname: String,
+    @SerializedName("userType")
     val role: String,
     val age: Int,
     val height : Float,

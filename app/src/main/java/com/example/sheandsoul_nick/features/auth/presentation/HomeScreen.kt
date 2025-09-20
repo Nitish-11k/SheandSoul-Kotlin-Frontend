@@ -99,7 +99,7 @@ fun HomeTopAppBar(
     CenterAlignedTopAppBar(
         title = {
             Text(
-                text = "$username",
+                text = "Hi, $username",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.Black

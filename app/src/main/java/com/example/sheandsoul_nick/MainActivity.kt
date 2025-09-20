@@ -136,7 +136,7 @@ class MainActivity : ComponentActivity() {
 
                     composable(Screen.Home.route) { // 5. Corrected route
                         HomeScreen(
-                            username = "Angel",
+                            username = authViewModel.name,
                             onNavigateToArticles = { navController.navigate(Screen.ArticleScreen.route) },
                             onNavigateToCommunity = { /* TODO */
                             },
