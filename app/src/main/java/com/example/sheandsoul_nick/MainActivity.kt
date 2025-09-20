@@ -153,12 +153,13 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable(Screen.ArticleScreen.route) { // 5. Corrected route
+                    composable(Screen.ArticleScreen.route) {
                         ArticlesScreen(
                             onNavigateToHome = { navController.popBackStack() },
                             onNavigateToCommunity = { /* TODO */ },
                             onNavigateToProfile = { /* TODO */ },
-                            onArticleClicked = { articleId ->
+                            // This is the line we fixed by adding ": Long"
+                            onArticleClicked = { articleId: Long ->
                                 navController.navigate(Screen.ArticleDetail.createRoute(articleId))
                             },
                             onNavigateToMusic = {},

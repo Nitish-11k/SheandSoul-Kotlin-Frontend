@@ -110,9 +110,11 @@ sealed class AuthResult {
                         val body = response.body()!!
                         userId = body.userId
                         token = body.token
-                        // ++ ADD THESE TWO LINES TO SAVE THE USER'S NAMES ++
+
+                        // ▼▼▼ ADD THESE TWO LINES TO SAVE THE USER'S NAME ▼▼▼
                         name = body.name ?: "" // Use the name from the response
                         nickname = body.nickname ?: "" // Also save the nickname
+
                         _authResult.postValue(AuthResult.Success("Login successful!"))
                     } else {
                         val errorMsg = response.errorBody()?.string() ?: "Login failed"

@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -34,31 +33,56 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage // <-- FIX 2: Import the real AsyncImage from the Coil library
+import coil.compose.AsyncImage
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.data.remote.ArticleCategoryDto
 import com.example.sheandsoul_nick.data.remote.ArticleDto
 import com.example.sheandsoul_nick.features.articles.ArticleViewModel
+import com.example.sheandsoul_nick.features.articles.ArticleViewModelFactory
 import com.example.sheandsoul_nick.features.articles.DataState
 
-@OptIn(ExperimentalMaterial3Api::class)
+// ======================================================================
+// This is the main function that gets the data.
+// ======================================================================
 @Composable
 fun ArticlesScreen(
-    authViewModel: AuthViewModel,
+    authViewModel: AuthViewModel, // <-- Make sure this parameter exists
     onNavigateToHome: () -> Unit,
     onNavigateToCommunity: () -> Unit,
     onNavigateToMusic: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onArticleClicked: (Long) -> Unit
 ) {
-    // FIX 1: Correctly initialize the ViewModel using the factory.
-    // The old, incorrect initialization was removed.
+    // ▼▼▼ THIS IS THE KEY CHANGE TO USE THE FACTORY ▼▼▼
     val articleViewModel: ArticleViewModel = viewModel(
         factory = ArticleViewModelFactory(authViewModel)
     )
     val categoriesState by articleViewModel.categories.observeAsState()
 
+    // Calls the UI-only content function
+    ArticlesScreenContent(
+        categoriesState = categoriesState,
+        onNavigateToHome = onNavigateToHome,
+        onNavigateToCommunity = onNavigateToCommunity,
+        onNavigateToMusic = onNavigateToMusic,
+        onNavigateToProfile = onNavigateToProfile,
+        onArticleClicked = onArticleClicked
+    )
+}
 
+// ======================================================================
+// This is the function for the UI and the Preview.
+// ======================================================================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArticlesScreenContent(
+    categoriesState: DataState<List<ArticleCategoryDto>>?,
+    onNavigateToHome: () -> Unit,
+    onNavigateToCommunity: () -> Unit,
+    onNavigateToMusic: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onArticleClicked: (Long) -> Unit
+) {
     Scaffold(
         topBar = { ArticlesTopAppBar() },
         bottomBar = {
@@ -89,7 +113,8 @@ fun ArticlesScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 16.dp)
+                            contentPadding = PaddingValues(vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             items(state.data) { category ->
                                 ArticleCategoryRow(
@@ -104,13 +129,16 @@ fun ArticlesScreen(
                     Text(text = state.message)
                 }
                 null -> {
-                    // Initial state before the ViewModel is ready
                     CircularProgressIndicator()
                 }
             }
         }
     }
 }
+
+// ======================================================================
+// All the helper functions are below.
+// ======================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -135,7 +163,7 @@ fun ArticlesTopAppBar() {
             )
         },
         actions = {
-            IconButton(onClick = { /* TODO: Handle filter click */ }) {
+            IconButton(onClick = { /* TODO */ }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_book),
                     contentDescription = "Filter",
@@ -179,7 +207,6 @@ fun ArticleCard(article: ArticleDto, modifier: Modifier = Modifier) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            // FIX 2: This now uses the real AsyncImage from Coil to load from the URL.
             AsyncImage(
                 model = article.imageUrl,
                 contentDescription = article.title,
@@ -187,8 +214,8 @@ fun ArticleCard(article: ArticleDto, modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .height(120.dp),
                 contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = R.drawable.ic_article_workout), // Placeholder while loading
-                error = painterResource(id = R.drawable.ic_article_workout) // Image to show if loading fails
+                placeholder = painterResource(id = R.drawable.ic_article_workout),
+                error = painterResource(id = R.drawable.ic_article_workout)
             )
             Text(
                 text = article.title,
@@ -202,8 +229,6 @@ fun ArticleCard(article: ArticleDto, modifier: Modifier = Modifier) {
     }
 }
 
-// FIX 2: The empty TODO function has been removed.
-
 @Composable
 fun AppBottomNavBar(
     selectedScreen: String,
@@ -214,7 +239,7 @@ fun AppBottomNavBar(
     onNavigateToProfile: () -> Unit
 ) {
     var selectedItem by remember { mutableStateOf(selectedScreen) }
-    val items = listOf("Home", "Articles", "Community", "Music", "Profile")
+    val items = listOf("Home", "Articles", "Community", "Music")
 
     NavigationBar(
         containerColor = Color(0xFFE0BBFF).copy(alpha = 0.5f),
@@ -263,9 +288,17 @@ fun BottomNavIcon(screen: String, isSelected: Boolean) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ArticlesScreenPreview() {
-    // FIX 3: Provide a blank AuthViewModel for the preview to work.
-    ArticlesScreen(
-        authViewModel = AuthViewModel(),
+    // Create some fake data for the preview
+    val fakeArticles = listOf(
+        ArticleDto(1, "How To Workout", "url", "content"),
+        ArticleDto(2, "Menstrual Cups", "url", "content")
+    )
+    val fakeCategory = ArticleCategoryDto(name = "Recommended For You", articles = fakeArticles)
+    val fakeState = DataState.Success(listOf(fakeCategory))
+
+    // Preview the content function directly with the fake data
+    ArticlesScreenContent(
+        categoriesState = fakeState,
         onNavigateToHome = {},
         onNavigateToCommunity = {},
         onNavigateToMusic = {},
