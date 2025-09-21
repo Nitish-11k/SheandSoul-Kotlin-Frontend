@@ -1,21 +1,39 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -23,11 +41,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
 import kotlinx.coroutines.launch
@@ -62,10 +78,11 @@ fun generateFtInList(startFt: Int, endFt: Int): List<Pair<Int, Int>> {
     return list
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HeightSelectionScreen(
     onContinueClicked: (Float, HeightUnit) -> Unit,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel
 ) {
     var selectedUnit by remember { mutableStateOf(HeightUnit.CM) }
 
@@ -182,12 +199,13 @@ fun HeightSelectionScreen(
                     listState = listStateCm,
                     items = cmList,
                     itemHeight = 60.dp,
-                ) { item, alpha ->
+                    selectorHeight = 60.dp  // NEW
+                ) { item, isSelected ->
                     Text(
                         text = "$item",
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2D2D2D).copy(alpha = alpha),
+                        fontSize = if (isSelected) 32.sp else 24.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -196,12 +214,13 @@ fun HeightSelectionScreen(
                     listState = listStateFt,
                     items = ftInList,
                     itemHeight = 60.dp,
-                ) { item, alpha ->
+                    selectorHeight = 60.dp  // NEW
+                ) { item, isSelected ->
                     Text(
                         text = "${item.first}' ${item.second}\"",
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2D2D2D).copy(alpha = alpha),
+                        fontSize = if (isSelected) 32.sp else 24.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -215,7 +234,8 @@ fun HeightSelectionScreen(
 
                 val finalHeight = if (selectedUnit == HeightUnit.CM) selectedHeightCm else ftInToCm(selectedHeightFt.first, selectedHeightFt.second)
                 val finalHeightFloat = finalHeight.toFloat()
-                authViewModel.height =finalHeightFloat
+                authViewModel.height =(finalHeightFloat -3f)
+                Log.d("She&Soul", "Height,Age selected: $finalHeightFloat ${authViewModel.height}  ${authViewModel.age}")
                 onContinueClicked(finalHeightFloat, selectedUnit)
             },
             text = "Continue >",
@@ -255,44 +275,79 @@ fun <T> VerticalNumberPicker(
     listState: LazyListState,
     items: List<T>,
     itemHeight: Dp,
-    content: @Composable (T, Float) -> Unit
+    selectorHeight: Dp,
+    content: @Composable (T, Boolean) -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
+
+    // Center Y of the selection box (not viewport center)
+
+
+    // Correct selected index = item at the exact center
     val itemHeightPx = with(LocalDensity.current) { itemHeight.toPx() }
-    val halfVisibleItems = (listState.layoutInfo.visibleItemsInfo.size / 2f).roundToInt()
+    val selectorHeightPx = with(LocalDensity.current) { selectorHeight.toPx() }
+
+    val selectedIndex by remember {
+        derivedStateOf {
+            val visibleInfo = listState.layoutInfo.visibleItemsInfo
+            if (visibleInfo.isEmpty()) return@derivedStateOf 0
+
+            // Find the Y position of the center of the selection box
+            val selectionCenter = listState.layoutInfo.viewportStartOffset + (listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset) / 2
+
+            // Adjust so it's aligned with selector box
+            val adjustedCenter = selectionCenter + (selectorHeightPx / 2) - (itemHeightPx / 2)
+
+            visibleInfo.minByOrNull {
+                abs((it.offset + it.size / 2) - adjustedCenter)
+            }?.index ?: 0
+        }
+    }
+
+
+
+    // Auto snap when scroll stops
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (!listState.isScrollInProgress) {
+            val visibleInfo = listState.layoutInfo.visibleItemsInfo
+            if (visibleInfo.isNotEmpty()) {
+                val selectionCenter = listState.layoutInfo.viewportEndOffset / 2
+
+                val nearest = visibleInfo.minByOrNull {
+                    abs((it.offset + it.size / 2) - selectionCenter)
+                }
+                nearest?.let {
+                    listState.animateScrollToItem(it.index)
+                }
+            }
+        }
+    }
+
 
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = (itemHeight * halfVisibleItems)),
+        contentPadding = PaddingValues(vertical = (itemHeight * 3)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         items(items.size) { index ->
             val item = items[index]
-            val centerIndex = listState.firstVisibleItemIndex + halfVisibleItems
-            val distance = abs(index - centerIndex)
-            val alpha = animateFloatAsState(
-                targetValue = when (distance) {
-                    0 -> 1f
-                    1 -> 0.5f
-                    2 -> 0.3f
-                    else -> 0.2f
-                },
-                animationSpec = tween(300),
-                label = "alphaAnimation"
-            ).value
+            val isSelected = index == selectedIndex
 
             Box(
                 modifier = Modifier.height(itemHeight),
                 contentAlignment = Alignment.Center
             ) {
-                content(item, alpha)
+                content(item, isSelected)
             }
         }
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun HeightSelectionScreenPreview() {
-    HeightSelectionScreen(onContinueClicked = { _, _ -> })
-}
+
+//
+//@Preview(showBackground = true, showSystemUi = true)
+//@Composable
+//fun HeightSelectionScreenPreview() {
+//    HeightSelectionScreen(onContinueClicked = { height, unit ->})
+//}

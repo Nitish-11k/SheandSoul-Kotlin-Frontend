@@ -178,22 +178,38 @@ fun ArticlesTopAppBar() {
 
 @Composable
 fun ArticleCategoryRow(category: ArticleCategoryDto, onArticleClicked: (Long) -> Unit) {
-    Column {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Category title only once
         Text(
             text = category.name,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Split articles into chunks of 4
+        val articleRows = category.articles.chunked(4)
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(category.articles) { article ->
-                ArticleCard(
-                    article = article,
-                    modifier = Modifier.clickable { onArticleClicked(article.id) }
-                )
+            articleRows.forEach { rowArticles ->
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    items(rowArticles) { article ->
+                        ArticleCard(
+                            article = article,
+                            modifier = Modifier
+                                .width(160.dp) // Keep fixed width
+                                .clickable { onArticleClicked(article.id) }
+                        )
+                    }
+                }
             }
         }
     }
@@ -203,7 +219,7 @@ fun ArticleCategoryRow(category: ArticleCategoryDto, onArticleClicked: (Long) ->
 fun ArticleCard(article: ArticleDto, modifier: Modifier = Modifier) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        modifier = modifier.size(160.dp, 180.dp),
+        modifier = modifier.height(180.dp), // Keep height fixed
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
@@ -220,7 +236,7 @@ fun ArticleCard(article: ArticleDto, modifier: Modifier = Modifier) {
             Text(
                 text = article.title,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier.padding(8.dp),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 fontSize = 14.sp
@@ -228,6 +244,7 @@ fun ArticleCard(article: ArticleDto, modifier: Modifier = Modifier) {
         }
     }
 }
+
 
 @Composable
 fun AppBottomNavBar(

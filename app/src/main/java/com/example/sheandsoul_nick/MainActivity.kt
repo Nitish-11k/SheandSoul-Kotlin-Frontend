@@ -1,9 +1,11 @@
 package com.example.sheandsoul_nick
 
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -19,6 +21,7 @@ import com.example.sheandsoul_nick.features.home.HomeScreen
 import com.example.sheandsoul_nick.ui.theme.SheAndSoulNickTheme
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -111,7 +114,11 @@ class MainActivity : ComponentActivity() {
                         PartnerComingSoonScreen(onGoBack = { navController.popBackStack() })
                     }
                     composable(Screen.AgeSelection.route) {
-                        AgeSelectionScreen(onContinueClicked = { navController.navigate(Screen.HeightSelection.route) })
+                        AgeSelectionScreen(onContinueClicked = {age->
+                            navController.navigate(Screen.HeightSelection.route)
+                        },
+                            authViewModel = authViewModel
+                            )
                     }
 
                     composable(Screen.HeightSelection.route) {
@@ -127,12 +134,46 @@ class MainActivity : ComponentActivity() {
                             authViewModel = authViewModel,
                             onContinueClicked = {
                                 // 6. Correct back stack clearing for signup flow
+                                navController.navigate(Screen.UsualPeriodLengthSelection.route) {
+                                    popUpTo(Screen.SignUp.route) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    composable(Screen.UsualPeriodLengthSelection.route) {
+                        UsualPeriodLengthScreen(
+                            authViewModel = authViewModel,
+                            onContinueClicked = {
+                                navController.navigate(Screen.UsualCycleLengthSelection.route) {
+                                    popUpTo(Screen.SignUp.route) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    composable(Screen.UsualCycleLengthSelection.route){
+                        UsualCycleLengthScreen(
+                            onContinueClicked = {
+                                navController.navigate(Screen.LastPeriodDateSelection.route) {
+                                    popUpTo(Screen.SignUp.route) { inclusive = true }
+                                }
+                            },
+                            authViewModel = authViewModel
+                        )
+                    }
+
+                    composable(Screen.LastPeriodDateSelection.route) {
+                        LastPeriodDateScreen(
+                            authViewModel = authViewModel,
+                            onFinish = {
                                 navController.navigate(Screen.Home.route) {
                                     popUpTo(Screen.SignUp.route) { inclusive = true }
                                 }
                             }
                         )
                     }
+
 
                     composable(Screen.Home.route) { // 5. Corrected route
                         HomeScreen(

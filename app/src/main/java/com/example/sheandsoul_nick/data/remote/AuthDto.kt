@@ -1,6 +1,7 @@
 package com.example.sheandsoul_nick.data.remote
 
 import com.google.gson.annotations.SerializedName
+import java.time.LocalDate
 
 // Data to SEND when signing up
 data class SignUpRequest(
@@ -56,8 +57,16 @@ data class CreateProfileRequest(
     val role: String,
     val age: Int,
     val height : Float,
-    val weight: Float
+    val weight: Float,
 )
+
+data class MenstrualData(
+    val periodLength : Int,
+    val cycleLength : Int,
+    val lastPeriodStartDate : LocalDate,
+    val lastPeriodEndDate: LocalDate
+)
+
 data class ProfileResponse(
     val message: String,
     val profileId: String

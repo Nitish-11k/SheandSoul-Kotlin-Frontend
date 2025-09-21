@@ -12,9 +12,13 @@ sealed class Screen(val route: String) {
     object AgeSelection : Screen("age_selection")
     object HeightSelection : Screen("height_selection")
     object WeightSelection : Screen("weight_selection")
+    object UsualPeriodLengthSelection : Screen("period_selection")
+    object UsualCycleLengthSelection : Screen("cycle_selection")
+    object LastPeriodDateSelection : Screen("last_period_date_selection")
     object Home : Screen("home_screen")
     object ArticleScreen : Screen("articles")
     object ArticleDetail : Screen("article_detail/{articleId}") {
         fun createRoute(articleId: Long) = "article_detail/$articleId"
     }
+
 }

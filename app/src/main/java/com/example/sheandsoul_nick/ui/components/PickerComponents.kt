@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -40,44 +41,66 @@ fun ToggleButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifie
 
 @Composable
 fun <T> VerticalNumberPicker(
-    listState: LazyListState,
+    listState: androidx.compose.foundation.lazy.LazyListState,
     items: List<T>,
     itemHeight: Dp,
-    content: @Composable (T, Float) -> Unit
+    selectorHeight: Dp = 60.dp, // default matches your box
+    content: @Composable (T, Boolean) -> Unit
 ) {
-    val visibleItemsInfo = listState.layoutInfo.visibleItemsInfo
-    val centerIndex = remember(visibleItemsInfo) {
-        val centerItem = visibleItemsInfo.minByOrNull {
-            abs(it.offset + it.size / 2 - listState.layoutInfo.viewportSize.height / 2)
+    val itemHeightPx = with(LocalDensity.current) { itemHeight.toPx() }
+    val selectorHeightPx = with(LocalDensity.current) { selectorHeight.toPx() }
+
+    // ✅ Corrected selected index calculation
+    val selectedIndex by remember {
+        derivedStateOf {
+            val visibleInfo = listState.layoutInfo.visibleItemsInfo
+            if (visibleInfo.isEmpty()) return@derivedStateOf 0
+
+            val selectionCenter =
+                (listState.layoutInfo.viewportEndOffset + listState.layoutInfo.viewportStartOffset) / 2
+
+            val adjustedCenter = selectionCenter + (selectorHeightPx / 2) - (itemHeightPx / 2)
+
+            visibleInfo.minByOrNull {
+                kotlin.math.abs((it.offset + it.size / 2) - adjustedCenter)
+            }?.index ?: 0
         }
-        centerItem?.index ?: (listState.firstVisibleItemIndex + visibleItemsInfo.size / 2)
     }
+
+    // Auto snap when scroll stops
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (!listState.isScrollInProgress) {
+            val visibleInfo = listState.layoutInfo.visibleItemsInfo
+            if (visibleInfo.isNotEmpty()) {
+                val selectionCenter = listState.layoutInfo.viewportEndOffset / 2
+
+                val nearest = visibleInfo.minByOrNull {
+                    abs((it.offset + it.size / 2) - selectionCenter)
+                }
+                nearest?.let {
+                    listState.animateScrollToItem(it.index)
+                }
+            }
+        }
+    }
+
+
 
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = (itemHeight * (listState.layoutInfo.visibleItemsInfo.size / 2f).roundToInt())),
+        contentPadding = PaddingValues(vertical = itemHeight * 3),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         items(items.size) { index ->
             val item = items[index]
-            val distance = abs(index - centerIndex)
-            val alpha = animateFloatAsState(
-                targetValue = when (distance) {
-                    0 -> 1f
-                    1 -> 0.6f
-                    2 -> 0.3f
-                    else -> 0.2f
-                },
-                animationSpec = tween(300),
-                label = "alphaAnimation"
-            ).value
+            val isSelected = index == selectedIndex
 
             Box(
                 modifier = Modifier.height(itemHeight),
                 contentAlignment = Alignment.Center
             ) {
-                content(item, alpha)
+                content(item, isSelected)
             }
         }
     }

@@ -1,6 +1,9 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
+import android.os.Build
+import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,61 +41,42 @@ enum class WeightUnit { KG, LBS }
 fun kgToLbs(kg: Int): Int = (kg * 2.20462).roundToInt()
 fun lbsToKg(lbs: Int): Int = (lbs / 2.20462).roundToInt()
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun WeightSelectionScreen(
     onContinueClicked: () -> Unit, // Re-added for navigation
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel
 ) {
     var selectedUnit by remember { mutableStateOf(WeightUnit.KG) }
-    var isLoading by remember { mutableStateOf(false) } // State for loading indicator
-
-    val context = LocalContext.current
-    // 1. Observe the profile creation result from the ViewModel
-    val profileCreationResult by authViewModel.profileCreationResult.observeAsState()
 
     // (Your existing state logic is correct)
-    val kgList = (30..150).toList()
-    val lbsList = (66..330).toList()
+    val kgList = (30..150).toList() + listOf(null)
+    val lbsList = (66..330).toList() + listOf(null)
     val defaultKg = 60
     val defaultLbs = kgToLbs(defaultKg)
-    val listStateKg = rememberLazyListState(initialFirstVisibleItemIndex = (defaultKg - kgList.first()).coerceAtLeast(0))
-    val listStateLbs = rememberLazyListState(initialFirstVisibleItemIndex = (defaultLbs - lbsList.first()).coerceAtLeast(0))
+    val listStateKg = rememberLazyListState(
+        initialFirstVisibleItemIndex = (defaultKg - 30 + 1).coerceAtLeast(0) // +1 because of null at start
+    )
+    val listStateLbs = rememberLazyListState(
+        initialFirstVisibleItemIndex = (defaultLbs - 66 + 1).coerceAtLeast(0)
+    )
     val coroutineScope = rememberCoroutineScope()
 
     val selectedWeightKg by remember {
         derivedStateOf {
-            if (listStateKg.isScrollInProgress) return@derivedStateOf defaultKg
+            if (listStateKg.layoutInfo.visibleItemsInfo.isEmpty()) return@derivedStateOf defaultKg
             val centerIndex = listStateKg.firstVisibleItemIndex + listStateKg.layoutInfo.visibleItemsInfo.size / 2
-            kgList.getOrElse(centerIndex) { defaultKg }
+            kgList.getOrNull(centerIndex) ?: defaultKg
         }
     }
     val selectedWeightLbs by remember {
         derivedStateOf {
-            if (listStateLbs.isScrollInProgress) return@derivedStateOf defaultLbs
+            if (listStateLbs.layoutInfo.visibleItemsInfo.isEmpty()) return@derivedStateOf defaultLbs
             val centerIndex = listStateLbs.firstVisibleItemIndex + listStateLbs.layoutInfo.visibleItemsInfo.size / 2
-            lbsList.getOrElse(centerIndex) { defaultLbs }
+            lbsList.getOrNull(centerIndex) ?: defaultLbs
         }
     }
 
-    // 2. Add this LaunchedEffect to handle the API response
-    LaunchedEffect(profileCreationResult) {
-        when (val result = profileCreationResult) {
-            is AuthResult.Success -> {
-                isLoading = false
-                Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
-                onContinueClicked() // Navigate ONLY after success
-            }
-            is AuthResult.Error -> {
-                isLoading = false
-                Toast.makeText(context, "Error: ${result.errorMessage}", Toast.LENGTH_LONG).show()
-            }
-            is AuthResult.Loading -> {
-                isLoading = true
-            }
-            null -> {}
-            is AuthResult.SuccessGoogle -> TODO()
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -137,7 +121,7 @@ fun WeightSelectionScreen(
                         if (selectedUnit != WeightUnit.KG) {
                             selectedUnit = WeightUnit.KG
                             val newKg = lbsToKg(selectedWeightLbs)
-                            val index = (newKg - kgList.first()).coerceIn(0, kgList.lastIndex)
+                            val index = (newKg - 30).coerceIn(0, kgList.lastIndex - 1)
                             coroutineScope.launch { listStateKg.animateScrollToItem(index) }
                         }
                     },
@@ -150,7 +134,7 @@ fun WeightSelectionScreen(
                         if (selectedUnit != WeightUnit.LBS) {
                             selectedUnit = WeightUnit.LBS
                             val newLbs = kgToLbs(selectedWeightKg)
-                            val index = (newLbs - lbsList.first()).coerceIn(0, lbsList.lastIndex)
+                            val index = (newLbs - 66).coerceIn(0, lbsList.lastIndex - 1)
                             coroutineScope.launch { listStateLbs.animateScrollToItem(index) }
                         }
                     },
@@ -179,14 +163,43 @@ fun WeightSelectionScreen(
                         )
                 )
                 if (selectedUnit == WeightUnit.KG) {
-                    VerticalNumberPicker(listState = listStateKg, items = kgList, itemHeight = 60.dp) { item, alpha ->
-                        Text(text = "$item", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D2D2D).copy(alpha = alpha), textAlign = TextAlign.Center)
+                    VerticalNumberPicker(
+                        listState = listStateKg,
+                        items = kgList,
+                        itemHeight = 60.dp
+                    ) { item, isSelected ->
+                        if(item!=null) {
+                            Text(
+                                text = "$item",
+                                fontSize = if (isSelected) 32.sp else 24.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }else{
+                            Spacer(modifier = Modifier.height(60.dp)) // fake padding row
+                        }
                     }
                 } else {
-                    VerticalNumberPicker(listState = listStateLbs, items = lbsList, itemHeight = 60.dp) { item, alpha ->
-                        Text(text = "$item", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D2D2D).copy(alpha = alpha), textAlign = TextAlign.Center)
+                    VerticalNumberPicker(
+                        listState = listStateLbs,
+                        items = lbsList,
+                        itemHeight = 60.dp
+                    ) { item, isSelected ->
+                        if(item!=null) {
+                            Text(
+                                text = "$item",
+                                fontSize = if (isSelected) 32.sp else 24.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        } else{
+                            Spacer(modifier = Modifier.height(60.dp)) // fake padding row
+                        }
                     }
                 }
+
             }
 
             Spacer(modifier = Modifier.weight(1f))
@@ -194,8 +207,10 @@ fun WeightSelectionScreen(
             HorizontalWaveButton(
                 onClick = {
                     val finalWeightInKg = if (selectedUnit == WeightUnit.KG) selectedWeightKg else lbsToKg(selectedWeightLbs)
-                    authViewModel.weight = finalWeightInKg.toFloat()
-                    authViewModel.createFullProfile()
+                    authViewModel.weight = (finalWeightInKg.toFloat()-3)
+                    Log.d("She&Soul", "Height,Age,weight selected:  ${authViewModel.height}  ${authViewModel.age} ${authViewModel.weight}")
+//                    authViewModel.createFullProfile()
+                    onContinueClicked()
                 },
                 text = "Continue >",
                 startColor = Color(0xFFBBBDFF),
@@ -206,24 +221,12 @@ fun WeightSelectionScreen(
             )
         }
 
-        // 3. Show the loading overlay
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(enabled = false, onClick = {}), // Prevent clicks behind the overlay
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Color.White)
-            }
-        }
     }
 }
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun WeightSelectionScreenPreview() {
-    // Update the preview to match the correct signature
-    WeightSelectionScreen(onContinueClicked = {})
-}
+//
+//@Preview(showBackground = true, showSystemUi = true)
+//@Composable
+//fun WeightSelectionScreenPreview() {
+//    // Update the preview to match the correct signature
+//    WeightSelectionScreen(onContinueClicked = {})
+//}
