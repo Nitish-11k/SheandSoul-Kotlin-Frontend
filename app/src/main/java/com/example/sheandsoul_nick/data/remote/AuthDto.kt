@@ -63,8 +63,8 @@ data class CreateProfileRequest(
 data class MenstrualData(
     val periodLength : Int,
     val cycleLength : Int,
-    val lastPeriodStartDate : LocalDate,
-    val lastPeriodEndDate: LocalDate
+    val lastPeriodStartDate : String,
+    val lastPeriodEndDate: String
 )
 
 data class ProfileResponse(
@@ -74,4 +74,8 @@ data class ProfileResponse(
 
 data class GoogleSignInRequest(
     val idToken: String
+)
+
+data class SuccessResponse(
+    val message : String
 )

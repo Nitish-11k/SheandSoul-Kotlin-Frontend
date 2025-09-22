@@ -22,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
 import com.example.sheandsoul_nick.ui.components.VerticalNumberPicker
@@ -116,8 +115,8 @@ fun UsualPeriodLengthScreen(
 
         HorizontalWaveButton(
             onClick = {
-                authViewModel.period_length = selectedDay
-                Log.d("She&Soul", "Selected Period Duration: $selectedDay days")
+                authViewModel.periodLength = selectedDay-3
+                Log.d("She&Soul", "Selected Period Duration: $selectedDay days ${authViewModel.periodLength}")
                 onContinueClicked()
             },
             text = "Continue >",

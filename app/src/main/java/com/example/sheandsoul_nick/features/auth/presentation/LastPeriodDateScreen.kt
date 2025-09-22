@@ -1,6 +1,7 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
@@ -21,16 +22,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.TextStyle
-import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -41,12 +38,29 @@ fun LastPeriodDateScreen(
     val currentMonth = remember { mutableStateOf(YearMonth.now()) }
     val selectedDates = remember { mutableStateListOf<LocalDate>() }
     val profileCreationResult by authViewModel.profileCreationResult.observeAsState()
+    val menstrualDataResult by authViewModel.menstrualDataResult.observeAsState()
 
     var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     LaunchedEffect(profileCreationResult) {
         when (val result = profileCreationResult) {
+            is AuthResult.Success -> {
+                Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                authViewModel.createMenstrualData()
+            }
+            is AuthResult.Error -> {
+                isLoading = false
+                Toast.makeText(context, "Error: ${result.errorMessage}", Toast.LENGTH_LONG).show()
+            }
+            is AuthResult.Loading -> isLoading = true
+            null -> {}
+            is AuthResult.SuccessGoogle -> TODO()
+        }
+    }
+
+    LaunchedEffect(menstrualDataResult) {
+        when (val result = menstrualDataResult) {
             is AuthResult.Success -> {
                 isLoading = false
                 Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
@@ -61,6 +75,8 @@ fun LastPeriodDateScreen(
             is AuthResult.SuccessGoogle -> TODO()
         }
     }
+
+
 
     Column(
         modifier = Modifier
@@ -187,10 +203,10 @@ fun LastPeriodDateScreen(
             HorizontalWaveButton(
                 onClick = {
                     if (selectedDates.isNotEmpty()) {
-                        authViewModel.last_period_start_date = selectedDates.first()
-                        authViewModel.last_period_end_date = selectedDates.last()
+                        authViewModel.lastPeriodStartDate = selectedDates.first()
+                        authViewModel.lastPeriodEndDate = selectedDates.last()
+                        Log.d("She&Soul", "Selected Dates: ${selectedDates.first()} ${selectedDates.last()}")
                         authViewModel.createFullProfile()
-                        authViewModel.createMenstrualData()
                     }
                 },
                 text = "Finish",

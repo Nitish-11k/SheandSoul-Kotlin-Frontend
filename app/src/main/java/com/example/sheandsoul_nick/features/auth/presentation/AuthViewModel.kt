@@ -1,22 +1,25 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.sheandsoul_nick.data.remote.AuthResponse
 import com.example.sheandsoul_nick.data.remote.CreateProfileRequest
 import com.example.sheandsoul_nick.data.remote.GoogleSignInRequest
 import com.example.sheandsoul_nick.data.remote.LoginRequest
 import com.example.sheandsoul_nick.data.remote.MenstrualData
+import com.example.sheandsoul_nick.data.remote.NextMenstrualResponse
 import com.example.sheandsoul_nick.data.remote.OtpVerificationRequest
 import com.example.sheandsoul_nick.data.remote.ResendOtpRequest
 import com.example.sheandsoul_nick.data.remote.RetrofitClient
 import com.example.sheandsoul_nick.data.remote.SignUpRequest
+import com.example.sheandsoul_nick.data.remote.SuccessResponse
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 // Represents the result of an API call
 sealed class AuthResult {
@@ -25,6 +28,13 @@ sealed class AuthResult {
     data class SuccessGoogle(val message: String) : AuthResult()
     object Loading : AuthResult()
 }
+
+sealed class MenstrualResult {
+    data class Success(val data: NextMenstrualResponse) : MenstrualResult()
+    data class Error(val errorMessage: String) : MenstrualResult()
+    object Loading : MenstrualResult()
+}
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 class AuthViewModel : ViewModel() {
@@ -42,10 +52,10 @@ class AuthViewModel : ViewModel() {
     var age: Int = 0
     var height: Float = 0.0f
     var weight: Float = 0.0f
-    var period_length: Int = 0  // 1 to 7
-    var cycle_length: Int = 0 // 1 to 28
-    var last_period_start_date: LocalDate = LocalDate.now()
-    var last_period_end_date: LocalDate = LocalDate.now()
+    var periodLength: Int = 0  // 1 to 7
+    var cycleLength: Int = 0 // 1 to 28
+    var lastPeriodStartDate: LocalDate = LocalDate.now()
+    var lastPeriodEndDate: LocalDate = LocalDate.now()
 
 
     // --- LiveData for API call results ---
@@ -62,7 +72,11 @@ class AuthViewModel : ViewModel() {
     val profileCreationResult: LiveData<AuthResult> = _profileCreationResult
 
     private val _menstrualDataResult = MutableLiveData<AuthResult>()
-    val menstrualData: LiveData<AuthResult> = _menstrualDataResult
+    val menstrualDataResult: LiveData<AuthResult> = _menstrualDataResult
+
+    private val _nextMenstrualResult = MutableLiveData<MenstrualResult>()
+    val nextMenstrualResult: LiveData<MenstrualResult> = _nextMenstrualResult
+
 
     // --- All API Functions MUST be inside the class ---
 
@@ -231,26 +245,50 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val request = MenstrualData(
-                    periodLength = period_length,
-                    cycleLength = cycle_length,
-                    lastPeriodStartDate = last_period_start_date,
-                    lastPeriodEndDate = last_period_end_date
+                    periodLength = periodLength,
+                    cycleLength = cycleLength,
+                    lastPeriodStartDate = lastPeriodStartDate.toString(),
+                    lastPeriodEndDate = lastPeriodEndDate.toString()
                 )
 
                 val response = apiService.menstrualData(request)
-                if (response.isSuccessful) {
-                    _profileCreationResult.postValue(AuthResult.Success("Menstrual data saved successfully!"))
+                Log.d("She&Soul", "$response $token")
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    Log.d("She&Soul", "$response $token")
+                    _menstrualDataResult.postValue(AuthResult.Success(body.message))
                 } else {
+                    Log.d("She&Soul", "$response $token")
                     val errorMsg = response.errorBody()?.string() ?: "Menstrual data failed"
-                    _profileCreationResult.postValue(AuthResult.Error(errorMsg))
+                    _menstrualDataResult.postValue(AuthResult.Error(errorMsg))
                 }
             } catch (e: Exception) {
-                _profileCreationResult.postValue(
-                    AuthResult.Error(
-                        e.message ?: "An unexpected error occurred"
-                    )
+                _menstrualDataResult.postValue(
+                    AuthResult.Error(e.message ?: "An unexpected error occurred")
                 )
             }
         }
     }
+
+    fun getNextMenstrualDetails() {
+        _nextMenstrualResult.value = MenstrualResult.Loading
+
+        viewModelScope.launch {
+            try {
+                val response = apiService.getNextMenstrualDetails()
+                if (response.isSuccessful && response.body() != null) {
+                    _nextMenstrualResult.postValue(MenstrualResult.Success(response.body()!!))
+                } else {
+                    val errorMsg = response.errorBody()?.string() ?: "Failed to fetch menstrual details"
+                    _nextMenstrualResult.postValue(MenstrualResult.Error(errorMsg))
+                }
+            } catch (e: Exception) {
+                _nextMenstrualResult.postValue(
+                    MenstrualResult.Error(e.message ?: "Unexpected error occurred")
+                )
+            }
+        }
+    }
+
+
 }

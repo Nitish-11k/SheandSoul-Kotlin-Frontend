@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
@@ -30,7 +31,7 @@ class MainActivity : ComponentActivity() {
             SheAndSoulNickTheme {
                 val navController = rememberNavController()
                 val authViewModel: AuthViewModel = viewModel()
-                // 1. State to hold the email during the signup flow
+                    // 1. State to hold the email during the signup flow
                 var userEmail by remember { mutableStateOf("") }
 
                 NavHost(navController = navController, startDestination = Screen.Privacy.route) {
@@ -190,7 +191,8 @@ class MainActivity : ComponentActivity() {
                             },
                             onNotificationClick = {
                                 Toast.makeText(context, "Notification Clicked!", Toast.LENGTH_SHORT).show()
-                            }
+                            },
+                            authViewModel = authViewModel,
                         )
                     }
 

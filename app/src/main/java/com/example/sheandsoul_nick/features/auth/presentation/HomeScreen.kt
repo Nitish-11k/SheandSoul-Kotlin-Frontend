@@ -1,6 +1,8 @@
 package com.example.sheandsoul_nick.features.home
 
+import android.os.Build
 import androidx.annotation.DrawableRes
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,8 +45,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sheandsoul_nick.R
+import com.example.sheandsoul_nick.features.auth.presentation.AuthViewModel
+import com.example.sheandsoul_nick.features.auth.presentation.MenstrualResult
 import com.example.sheandsoul_nick.ui.components.AppBottomNavBar
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -53,8 +61,33 @@ fun HomeScreen(
     onNavigateToArticles: () -> Unit,
     onNavigateToCommunity: () -> Unit,
     onNavigateToProfile: () -> Unit,
-    onNavigateToPartner: () -> Unit
+    onNavigateToPartner: () -> Unit,
+    authViewModel: AuthViewModel,
 ) {
+
+    val nextMenstrualResult by authViewModel.nextMenstrualResult.observeAsState()
+
+    LaunchedEffect(Unit) {
+        authViewModel.getNextMenstrualDetails()
+    }
+
+    val daysLeft = remember(nextMenstrualResult) {
+        when (val result = nextMenstrualResult) {
+            is MenstrualResult.Success -> {
+                try {
+                    val startDate = LocalDate.parse(result.data.nextPeriodStartDate)
+                    ChronoUnit.DAYS.between(LocalDate.now(), startDate).toInt()
+                } catch (e: Exception) {
+                    0 // fallback if parsing fails
+                }
+            }
+            else -> 0
+        }
+    }
+
+
+
+
     Scaffold(
         topBar = { HomeTopAppBar(
             username = username,
@@ -78,7 +111,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { PeriodTrackerCard(daysLeft = 25, progress = 0.8f) }
+            item { PeriodTrackerCard(daysLeft = daysLeft, progress = 0.8f) }
             item { FertilityCard(daysLeft = 11) }
             item { AddPartnerCard(onClick = onNavigateToPartner) }
             item { PcosAssessmentCard() }
@@ -362,11 +395,12 @@ fun ArticleCard(article: Article) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    HomeScreen(username = "Angel",onProfileClick = {}, onNavigateToArticles = {}, onNavigateToCommunity = {}, onNavigateToProfile = {}, onNotificationClick = {}, onNavigateToPartner = {})
-}
+//@RequiresApi(Build.VERSION_CODES.O)
+//@Preview(showBackground = true)
+//@Composable
+//fun HomeScreenPreview() {
+//    HomeScreen(username = "Angel",onProfileClick = {}, onNavigateToArticles = {}, onNavigateToCommunity = {}, onNavigateToProfile = {}, onNotificationClick = {}, onNavigateToPartner = {})
+//}
 
 // NOTE: It is a best practice to move AppBottomNavBar and BottomNavIcon to a shared
 // components file (e.g., ui/components/BottomBar.kt) so it can be reused.

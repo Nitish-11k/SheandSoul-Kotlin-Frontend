@@ -20,7 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
 import com.example.sheandsoul_nick.ui.components.VerticalNumberPicker
@@ -114,9 +113,8 @@ fun UsualCycleLengthScreen(
 
         HorizontalWaveButton(
             onClick = {
-                authViewModel.cycle_length = selectedDay
-                Log.d("She&Soul", "Selected Cycle Duration: $selectedDay days")
-//                authViewModel.createFullProfile()
+                authViewModel.cycleLength = selectedDay-3
+                Log.d("She&Soul", "Selected Cycle Duration: $selectedDay days  ${authViewModel.cycleLength}")
                 onContinueClicked()
             },
             text = "Continue >",

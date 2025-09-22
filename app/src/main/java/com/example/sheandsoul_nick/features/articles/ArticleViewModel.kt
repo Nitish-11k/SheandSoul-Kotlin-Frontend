@@ -1,5 +1,7 @@
 package com.example.sheandsoul_nick.features.articles
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -17,8 +19,10 @@ sealed class DataState<T> {
     class Loading<T> : DataState<T>()
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 class ArticleViewModel(private val authViewModel: AuthViewModel) : ViewModel() {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private val apiService: ApiService = RetrofitClient.getInstance(authViewModel)
 
     private val _categories = MutableLiveData<DataState<List<ArticleCategoryDto>>>()
@@ -28,6 +32,7 @@ class ArticleViewModel(private val authViewModel: AuthViewModel) : ViewModel() {
         fetchArticleCategories()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun fetchArticleCategories() {
         _categories.value = DataState.Loading()
         viewModelScope.launch {

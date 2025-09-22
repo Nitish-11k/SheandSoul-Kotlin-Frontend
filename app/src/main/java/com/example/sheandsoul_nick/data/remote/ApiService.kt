@@ -1,5 +1,6 @@
 package com.example.sheandsoul_nick.data.remote
 
+import com.example.sheandsoul_nick.features.auth.presentation.AuthResult
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -25,8 +26,8 @@ interface ApiService {
     @POST("api/profile") // Adjust the endpoint to match your backend
     suspend fun createProfile(@Body request: CreateProfileRequest): Response<ProfileResponse>
 
-    @PUT("/api/menstrual-data")
-    suspend fun menstrualData(@Body request : MenstrualData) : Response<MenstrualData>
+    @PUT("api/menstrual-data")
+    suspend fun menstrualData(@Body request : MenstrualData) : Response<AuthResponse>
 
     @POST("api/google") // The endpoint path on your backend
     suspend fun signInWithGoogle(@Body request: GoogleSignInRequest): Response<AuthResponse>
@@ -36,5 +37,8 @@ interface ApiService {
 
     @GET("api/article/{id}")
     suspend fun getArticleById(@Path("id") articleId: Long): Response<ArticleDto>
+
+    @GET("api/next-period")
+    suspend fun getNextMenstrualDetails(): Response<NextMenstrualResponse>
 
 }

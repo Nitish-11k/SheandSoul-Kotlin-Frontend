@@ -14,6 +14,7 @@ object RetrofitClient {
             .addInterceptor(AuthInterceptor(authViewModel)) // <-- Add the interceptor
             .build()
 
+
         val retrofit = Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient) // <-- Use the new client with the interceptor
