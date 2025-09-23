@@ -42,7 +42,8 @@ fun ProfileScreen(
                     Image(
                         painter = painterResource(id = R.drawable.ic_sheandsoul_text),
                         contentDescription = "She & Soul Logo",
-                        modifier = Modifier.height(24.dp)
+                        modifier = Modifier.width(130.dp)
+                            .height(50.dp)
                     )
                 },
                 navigationIcon = {

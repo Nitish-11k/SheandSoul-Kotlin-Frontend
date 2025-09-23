@@ -154,3 +154,16 @@ data class NextMenstrualResponse(
     val nextLutealStartDate: String,
     val nextLutealEndDate: String
 )
+data class UserProfileDto(
+    @SerializedName("userId") val userId: Long,
+    @SerializedName("email") val email: String,
+    @SerializedName("name") val name: String?,
+    @SerializedName("nickname") val nickname: String?,
+    @SerializedName("userType") val userType: String?,
+    @SerializedName("age") val age: Int?,
+    @SerializedName("height") val height: Float?,
+    @SerializedName("weight") val weight: Float?,
+    @SerializedName("periodLength") val periodLength: Int?,
+    @SerializedName("cycleLength") val cycleLength: Int?,
+    @SerializedName("lastPeriodStartDate") val lastPeriodStartDate: String? // Dates come as Strings
+)

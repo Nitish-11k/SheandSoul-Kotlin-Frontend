@@ -35,4 +35,5 @@ sealed class Screen(val route: String) {
     object LastPeriodDateSelection : Screen("last_period_date_selection")
 
     object Profile : Screen("profile")
+    object EditCycle : Screen("edit_cycle")
 }

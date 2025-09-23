@@ -16,6 +16,7 @@ import com.example.sheandsoul_nick.data.remote.*
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 // Sealed classes remain the same
 sealed class AuthResult {
@@ -72,21 +73,63 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     val forgotPasswordResult: LiveData<AuthResult> = _forgotPasswordResult
     private val _nextMenstrualResult = MutableLiveData<MenstrualResult>()
     val nextMenstrualResult: LiveData<MenstrualResult> = _nextMenstrualResult
+    private val _menstrualUpdateResult = MutableLiveData<AuthResult>()
+    val menstrualUpdateResult: LiveData<AuthResult> = _menstrualUpdateResult
 
     // ✅ 3. Add an init block to check the session when the app starts
     init {
         checkActiveSession()
     }
-
+    private fun fetchUserProfile(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                if (token == null) {
+                    onComplete() // Nothing to fetch
+                    return@launch
+                }
+                val response = apiService.getUserProfile()
+                if (response.isSuccessful && response.body() != null) {
+                    val profile = response.body()!!
+                    // Populate ViewModel fields from the response
+                    userId = profile.userId
+                    email = profile.email
+                    name = profile.name ?: ""
+                    nickname = profile.nickname ?: ""
+                    age = profile.age ?: 0
+                    height = profile.height ?: 0.0f
+                    weight = profile.weight ?: 0.0f
+                    period_length = profile.periodLength ?: 0
+                    cycle_length = profile.cycleLength ?: 0
+                    if (profile.lastPeriodStartDate != null) {
+                        last_period_start_date = LocalDate.parse(profile.lastPeriodStartDate, DateTimeFormatter.ISO_LOCAL_DATE)
+                    }
+                    Log.d("AuthViewModel", "Profile fetched successfully for ${profile.name}")
+                } else {
+                    // This can happen if the token is invalid/expired
+                    Log.w("AuthViewModel", "Failed to fetch profile, logging out.")
+                    logout()
+                }
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error fetching profile", e)
+                logout() // Log out on network error to be safe
+            } finally {
+                onComplete() // Signal completion in all cases
+            }
+        }
+    }
     private fun checkActiveSession() {
         viewModelScope.launch {
             val savedToken = sessionManager.authTokenFlow.firstOrNull()
             if (!savedToken.isNullOrBlank()) {
                 token = savedToken
-                // Optional: You could add a function here to fetch user profile data
-                // associated with the token to populate the 'name', 'email' etc.
+                // Fetch profile and THEN mark session as checked
+                fetchUserProfile {
+                    isSessionChecked = true
+                }
+            } else {
+                // No token, so session is checked and user is not logged in
+                isSessionChecked = true
             }
-            isSessionChecked = true
         }
     }
     private fun syncFcmToken() {
@@ -183,6 +226,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
                     // Save the token
                     token?.let { sessionManager.saveAuthToken(it) }
+                    syncFcmToken()
 
                     _authResult.postValue(AuthResult.SuccessGoogle(body.message ?: "Sign-in successful!", isNewUser))
                 } else {
@@ -209,13 +253,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
                     // Save the token
                     token?.let { sessionManager.saveAuthToken(it) }
+                    syncFcmToken()
 
                     _authResult.postValue(AuthResult.Success(body.message ?: "Sign-up Successful"))
                 } else {
                     // ... (error handling)
+                    val errorMsg = response.errorBody()?.string() ?: "Login failed"
+                    _authResult.postValue(AuthResult.Error(errorMsg))
                 }
             } catch (e: Exception) {
                 // ... (exception handling)
+                _authResult.postValue(AuthResult.Error(e.message ?: "An error occurred"))
             }
         }
     }
@@ -235,6 +283,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
                     // Save the token
                     token?.let { sessionManager.saveAuthToken(it) }
+                    syncFcmToken()
 
                     _authResult.postValue(AuthResult.Success("Login successful!"))
                 } else {
@@ -327,6 +376,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
     fun getNextMenstrualDetails() {
         _nextMenstrualResult.value = MenstrualResult.Loading
         viewModelScope.launch {
@@ -345,19 +395,25 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-
-    fun sendTestNotification(token: String) {
+    fun updateMenstrualCycleData() {
+        _menstrualUpdateResult.value = AuthResult.Loading
         viewModelScope.launch {
             try {
-                val request = NotificationRequest(
-                    token = token,
-                    title = "Test from App",
-                    body = "This notification was triggered from the Android app!"
+                val menstrualRequest = MenstrualData(
+                    periodLength = period_length,
+                    cycleLength = cycle_length,
+                    lastPeriodStartDate = last_period_start_date.toString(),
+                    lastPeriodEndDate = last_period_end_date.toString()
                 )
-                apiService.sendTestNotification(request)
+                val response = apiService.menstrualData(menstrualRequest)
+                if (response.isSuccessful) {
+                    _menstrualUpdateResult.postValue(AuthResult.Success("Cycle updated successfully!"))
+                } else {
+                    val errorMsg = response.errorBody()?.string() ?: "Failed to update cycle data"
+                    _menstrualUpdateResult.postValue(AuthResult.Error(errorMsg))
+                }
             } catch (e: Exception) {
-                // Handle error, e.g., show a toast
-                Log.e("NotificationTest", "Failed to send notification", e)
+                _menstrualUpdateResult.postValue(AuthResult.Error(e.message ?: "An unexpected error occurred."))
             }
         }
     }
@@ -367,12 +423,12 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     fun logout() {
         viewModelScope.launch {
             sessionManager.clearAuthToken()
-            // Reset all local user state
             token = null
             userId = null
             name = ""
             nickname = ""
             email = ""
+            age = 0
         }
     }
 }

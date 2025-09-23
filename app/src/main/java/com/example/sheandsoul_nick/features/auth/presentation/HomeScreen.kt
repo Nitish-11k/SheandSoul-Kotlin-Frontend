@@ -13,6 +13,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -67,9 +69,11 @@ fun HomeScreen(
     val articlesState by articleViewModel.categories.observeAsState()
     val menstrualResult by authViewModel.nextMenstrualResult.observeAsState()
 
-    LaunchedEffect(key1 = Unit) {
-        articleViewModel.loadArticlesIfTokenAvailable()
-        authViewModel.getNextMenstrualDetails()
+    LaunchedEffect(key1 = authViewModel.token) {
+        if(authViewModel.token != null) {
+            articleViewModel.loadArticlesIfTokenAvailable()
+            authViewModel.getNextMenstrualDetails()
+        }
     }
 
     val username by remember { derivedStateOf { authViewModel.name.ifEmpty { "User" } } }
@@ -571,7 +575,7 @@ fun AppBottomNavBar(
 fun BottomNavIcon(screen: String, isSelected: Boolean) {
     val icon: ImageVector = when (screen) {
         "Home" -> if (isSelected) Icons.Filled.Home else Icons.Outlined.Home
-        "Articles" -> if (isSelected) Icons.Filled.ListAlt else Icons.Outlined.ListAlt
+        "Articles" -> if (isSelected) Icons.AutoMirrored.Filled.ListAlt else Icons.AutoMirrored.Outlined.ListAlt
         "Community" -> if (isSelected) Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline
         "Music" -> if (isSelected) Icons.Filled.LibraryMusic else Icons.Outlined.LibraryMusic
         else -> Icons.Filled.Home

@@ -20,10 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
 import com.example.sheandsoul_nick.ui.components.VerticalNumberPicker
+import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -31,16 +31,20 @@ fun UsualCycleLengthScreen(
     onContinueClicked:()->Unit,
     authViewModel: AuthViewModel
 ) {
-    val daysList = (1..28).toList() + listOf(null) // fake items on top & bottom
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 27 / 2) // default = middle of 1-28
+    val daysList = (10..30).toList()
+    val defaultCycleLength = 28
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = daysList.indexOf(defaultCycleLength).coerceAtLeast(0))
 
     val selectedDay by remember {
         derivedStateOf {
-            if (listState.layoutInfo.visibleItemsInfo.isNotEmpty()) {
-                val centerIndex = listState.firstVisibleItemIndex + listState.layoutInfo.visibleItemsInfo.size / 2
-                val value = daysList.getOrNull(centerIndex)
-                value ?: 28 / 2
-            } else 28 / 2
+            val visibleItemsInfo = listState.layoutInfo.visibleItemsInfo
+            if (visibleItemsInfo.isEmpty()) {
+                defaultCycleLength
+            } else {
+                val viewportCenter = (listState.layoutInfo.viewportStartOffset + listState.layoutInfo.viewportEndOffset) / 2
+                val centerItem = visibleItemsInfo.minByOrNull { abs((it.offset + it.size / 2) - viewportCenter) }
+                centerItem?.index?.let { daysList.getOrNull(it) } ?: defaultCycleLength
+            }
         }
     }
 
@@ -70,7 +74,6 @@ fun UsualCycleLengthScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Number picker for 1-28 days
         Box(
             modifier = Modifier
                 .height(300.dp)
@@ -96,17 +99,13 @@ fun UsualCycleLengthScreen(
                 itemHeight = 60.dp,
                 selectorHeight = 60.dp
             ) { item, isSelected ->
-                if (item != null) {
-                    Text(
-                        text = "$item days",
-                        fontSize = if (isSelected) 32.sp else 24.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
-                        textAlign = TextAlign.Center
-                    )
-                } else {
-                    Spacer(modifier = Modifier.height(60.dp))
-                }
+                Text(
+                    text = "$item days",
+                    fontSize = if (isSelected) 32.sp else 24.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
+                    textAlign = TextAlign.Center
+                )
             }
         }
 
@@ -116,7 +115,6 @@ fun UsualCycleLengthScreen(
             onClick = {
                 authViewModel.cycle_length = selectedDay
                 Log.d("She&Soul", "Selected Cycle Duration: $selectedDay days")
-//                authViewModel.createFullProfile()
                 onContinueClicked()
             },
             text = "Continue >",
@@ -128,3 +126,4 @@ fun UsualCycleLengthScreen(
         )
     }
 }
+

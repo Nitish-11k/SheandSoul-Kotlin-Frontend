@@ -1,16 +1,17 @@
 package com.example.sheandsoul_nick.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -27,10 +28,15 @@ fun HorizontalWaveButton(
     endColor: Color,
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 12.dp,
-    useVerticalGradient: Boolean = false
+    useVerticalGradient: Boolean = false,
+    enabled: Boolean = true // Added enabled parameter
 ) {
+    // Animate the alpha to give a visual cue when the button is disabled
+    val alpha by animateFloatAsState(targetValue = if (enabled) 1f else 0.5f, label = "alphaAnim")
+
     Box(
         modifier = modifier
+            .alpha(alpha) // Apply the alpha for disabled state
             .background(
                 brush = if (useVerticalGradient) {
                     Brush.verticalGradient(colors = listOf(startColor, endColor))
@@ -39,7 +45,7 @@ fun HorizontalWaveButton(
                 },
                 shape = RoundedCornerShape(cornerRadius)
             )
-            .clickable { onClick() },
+            .clickable(enabled = enabled, onClick = onClick), // Use the enabled parameter here
         contentAlignment = Alignment.Center
     ) {
         Text(

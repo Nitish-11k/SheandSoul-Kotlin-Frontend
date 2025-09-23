@@ -99,12 +99,12 @@ class MainActivity : ComponentActivity() {
                                 onForgotPasswordClicked = {
                                     navController.navigate(Screen.ForgotPassword.route)
                                 },
-                                onGoogleSignInSuccess = {
-
-                                    navController.navigate(Screen.Home.route) {
-
-                                        popUpTo(Screen.Login.route) { inclusive = true }
-
+                                onGoogleSignInSuccess = { isNewUser ->
+                                    // If it's a new user, go to Name screen, otherwise go to Home
+                                    val destination = if (isNewUser) Screen.Name.route else Screen.Home.route
+                                    navController.navigate(destination) {
+                                        // Clear the auth flow from the back stack
+                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                     }
 
                                 }
@@ -170,8 +170,7 @@ class MainActivity : ComponentActivity() {
                                 authViewModel = authViewModel,
                                 onContinueClicked = {
                                     navController.navigate(Screen.Nickname.route)
-                                },
-                                onNavigateBack = {navController.popBackStack()}
+                                }
                             )
                         }
 
@@ -179,8 +178,7 @@ class MainActivity : ComponentActivity() {
                             NicknameScreen(
                                 authViewModel = authViewModel,
                                 onContinueClicked = { navController.navigate(Screen.RoleSelection.route) },
-                                onSkipClicked = { navController.navigate(Screen.RoleSelection.route) },
-                                onNavigateBack = {navController.popBackStack()}
+                                onSkipClicked = { navController.navigate(Screen.RoleSelection.route) }
                             )
                         }
 
@@ -193,8 +191,7 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         navController.navigate(Screen.PartnerRole.route)
                                     }
-                                },
-                                onNavigateBack = {}
+                                }
                             )
                         }
                         composable(Screen.PartnerRole.route) {
@@ -282,7 +279,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onNavigateToPcosDashboard = { navController.navigate(Screen.PcosDashboard.route) },
                                 onNavigateToEditCycle = {
-                                    navController.navigate(Screen.UsualPeriodLengthSelection.route)
+                                    navController.navigate(Screen.EditCycle.route)
                                 }
                             )
                         }
@@ -291,7 +288,7 @@ class MainActivity : ComponentActivity() {
                             ArticlesScreen(
                                 onNavigateToHome = { navController.navigate(Screen.Home.route) },
                                 onNavigateToCommunity = {navController.navigate(Screen.Community.route)},
-                                onNavigateToProfile = { /* TODO */ },
+                                onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
                                 onArticleClicked = { articleId: Long ->
                                     navController.navigate(Screen.ArticleDetail.createRoute(articleId))
                                 },
@@ -301,13 +298,22 @@ class MainActivity : ComponentActivity() {
                                 authViewModel = authViewModel
                             )
                         }
+
+                        composable(Screen.EditCycle.route) {
+                            EditCycleDetailsScreen(
+                                authViewModel = authViewModel,
+                                onNavigateBack = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
                         composable("music") {
                             MusicScreen(
                                 authViewModel = authViewModel,
                                 onNavigateToHome = { navController.navigate(Screen.Home.route) },
                                 onNavigateToArticles = { navController.navigate(Screen.ArticleScreen.route) },
                                 onNavigateToCommunity = { navController.navigate(Screen.Community.route) },
-                                onNavigateToProfile = { /* TODO: Define a profile route */ }
+                                onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
                             )
                         }
                         composable(
@@ -334,10 +340,7 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToArticles = {
                                     navController.navigate(Screen.ArticleScreen.route)
                                 },
-                                onNavigateToProfile = {
-                                    Toast.makeText(context, "Profile Clicked!", Toast.LENGTH_SHORT)
-                                        .show()
-                                }
+                                onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
                             )
                         }
                         composable(Screen.PcosQuiz.route) {
@@ -348,7 +351,8 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Screen.PcosDashboard.route) {
                                         popUpTo(Screen.PcosQuiz.route) { inclusive = true }
                                     }
-                                }
+                                },
+                                onNavigateBack = {navController.popBackStack()}
                             )
                         }
                         composable(Screen.PcosDashboard.route) {
@@ -365,10 +369,7 @@ class MainActivity : ComponentActivity() {
                                 authViewModel = authViewModel,
                                 onNavigateBack = { navController.popBackStack() },
                                 onNavigateToLogin = {
-                                    navController.navigate(Screen.Login.route) {
-                                        // Clear the entire app history so the user can't go back
-                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                    }
+                                    navController.navigate(Screen.Login.route)
                                 }
                             )
                         }

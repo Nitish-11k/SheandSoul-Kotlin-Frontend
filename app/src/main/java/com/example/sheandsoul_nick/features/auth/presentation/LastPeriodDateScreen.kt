@@ -29,10 +29,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
+import com.example.sheandsoul_nick.ui.theme.SheAndSoulNickTheme
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
-import java.time.temporal.ChronoUnit
 import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -43,15 +43,14 @@ fun LastPeriodDateScreen(
 ) {
     val currentSystemMonth = YearMonth.now()
     val twoMonthsAgo = currentSystemMonth.minusMonths(2)
-    val currentMonth = remember { mutableStateOf(currentSystemMonth.minusMonths(1)) }
+    val currentMonth = remember { mutableStateOf(currentSystemMonth) }
 
     val selectedDates = remember { mutableStateListOf<LocalDate>() }
     val profileCreationResult by authViewModel.profileCreationResult.observeAsState()
 
     var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    // Use a default of 7 days if the ViewModel value is not set, and ensure it's not more than 7.
-    val periodLength = 7
+    val maxSelectionDays = 7
 
     LaunchedEffect(profileCreationResult) {
         when (val result = profileCreationResult) {
@@ -65,7 +64,8 @@ fun LastPeriodDateScreen(
                 Toast.makeText(context, "Error: ${result.errorMessage}", Toast.LENGTH_LONG).show()
             }
             is AuthResult.Loading -> isLoading = true
-            else -> { /* Do nothing */ }
+            else -> { /* Do nothing */
+            }
         }
     }
 
@@ -133,43 +133,31 @@ fun LastPeriodDateScreen(
                     currentMonth = currentMonth.value,
                     selectedDates = selectedDates,
                     onDateSelected = { date ->
-                        // ✨ --- START: REFACTORED RANGE SELECTION LOGIC --- ✨
-                        val firstSelection = selectedDates.firstOrNull()
-
-                        if (firstSelection == null || selectedDates.size > 1) {
-                            // Case 1: No dates are selected OR a full range is already selected.
-                            // Action: Clear everything and start a new selection with the tapped date.
-                            selectedDates.clear()
+                        // New logic for consecutive date selection
+                        if (selectedDates.isEmpty()) {
+                            // 1. Start a new selection
                             selectedDates.add(date)
                         } else {
-                            // Case 2: Exactly one date (the start date) is selected.
-                            // Action: Define the range from the start date to the newly tapped date.
-                            val startDate = firstSelection
-                            val endDate = date
+                            val minDate = selectedDates.minOrNull()!!
+                            val maxDate = selectedDates.maxOrNull()!!
 
-                            // Ensure start is before end
-                            val rangeStart = if (startDate.isBefore(endDate)) startDate else endDate
-                            val rangeEnd = if (startDate.isBefore(endDate)) endDate else startDate
-
-                            val daysInSelection = ChronoUnit.DAYS.between(rangeStart, rangeEnd) + 1
-
-                            if (daysInSelection > periodLength) {
-                                // If the selected range is too long, show a toast.
-                                Toast.makeText(context, "Period cannot be longer than $periodLength days.", Toast.LENGTH_SHORT).show()
-                                // And reset the selection to just the newly tapped date.
+                            if (selectedDates.contains(date)) {
+                                // 2. Tapped a selected date - reset to this date
                                 selectedDates.clear()
                                 selectedDates.add(date)
-                            } else {
-                                // If the range is valid, clear the single selection and add all dates in the range.
-                                selectedDates.clear()
-                                var currentDate = rangeStart
-                                while (!currentDate.isAfter(rangeEnd)) {
-                                    selectedDates.add(currentDate)
-                                    currentDate = currentDate.plusDays(1)
+                            } else if (date == maxDate.plusDays(1) || date == minDate.minusDays(1)) {
+                                // 3. Tapped an adjacent date - extend selection
+                                if (selectedDates.size < maxSelectionDays) {
+                                    selectedDates.add(date)
+                                } else {
+                                    Toast.makeText(context, "You can select up to $maxSelectionDays consecutive days.", Toast.LENGTH_SHORT).show()
                                 }
+                            } else {
+                                // 4. Tapped a non-adjacent date - start new selection
+                                selectedDates.clear()
+                                selectedDates.add(date)
                             }
                         }
-                        // ✨ --- END: REFACTORED RANGE SELECTION LOGIC --- ✨
                     }
                 )
             }
@@ -180,8 +168,12 @@ fun LastPeriodDateScreen(
         HorizontalWaveButton(
             onClick = {
                 if (selectedDates.isNotEmpty()) {
-                    authViewModel.last_period_start_date = selectedDates.minOrNull()!!
-                    authViewModel.last_period_end_date = selectedDates.maxOrNull()!!
+                    // Sort the dates to correctly find the min and max
+                    selectedDates.sort()
+                    authViewModel.last_period_start_date = selectedDates.first()
+                    authViewModel.last_period_end_date = selectedDates.last()
+                    // The actual period length is the number of days selected
+                    authViewModel.period_length = selectedDates.size
                     authViewModel.finalizeOnboardingAndSaveData()
                 } else {
                     Toast.makeText(context, "Please select your last period date(s).", Toast.LENGTH_SHORT).show()
@@ -192,7 +184,8 @@ fun LastPeriodDateScreen(
             endColor = Color(0xFF9092FF),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
+                .height(50.dp),
+            enabled = selectedDates.isNotEmpty() // Disable button if no dates are selected
         )
     }
 
@@ -284,9 +277,11 @@ fun CalendarGrid(
                             )
                         }
                     } else {
-                        Spacer(modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(1f))
+                        Spacer(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f)
+                        )
                     }
                 }
             }
@@ -298,5 +293,8 @@ fun CalendarGrid(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun LastPeriodDateScreenPreview() {
-    LastPeriodDateScreen(authViewModel = viewModel(), onFinish = {})
+    SheAndSoulNickTheme {
+        LastPeriodDateScreen(authViewModel = viewModel(), onFinish = {})
+    }
 }
+

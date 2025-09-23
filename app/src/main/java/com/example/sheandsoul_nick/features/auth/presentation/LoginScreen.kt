@@ -1,10 +1,12 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
 import android.app.Activity
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,11 +44,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun LoginScreen(
     onNavigateToSignup: () -> Unit = {},
     onLoginSuccess: () -> Unit = {},
-    onGoogleSignInSuccess: () -> Unit = {},
+    onGoogleSignInSuccess: (isNewUser: Boolean) -> Unit = {},
     onForgotPasswordClicked: () -> Unit = {},
     authViewModel: AuthViewModel = viewModel()
 ) {
@@ -99,7 +102,7 @@ fun LoginScreen(
             is AuthResult.SuccessGoogle -> {
                 isLoading = false
                 Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
-                onGoogleSignInSuccess()
+                onGoogleSignInSuccess(result.isNewUser)
             }
             is AuthResult.Error -> {
                 isLoading = false
@@ -245,6 +248,7 @@ fun LoginScreen(
         }
     }
 }
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun LoginScreenPreview() {

@@ -1,5 +1,7 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -43,6 +45,7 @@ import com.example.sheandsoul_nick.features.articles.ArticleViewModel
 import com.example.sheandsoul_nick.features.articles.ArticleViewModelFactory
 import com.example.sheandsoul_nick.features.articles.DataState
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ArticlesScreen(
     authViewModel: AuthViewModel,

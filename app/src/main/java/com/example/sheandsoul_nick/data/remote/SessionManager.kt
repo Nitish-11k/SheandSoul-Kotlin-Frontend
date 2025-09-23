@@ -5,6 +5,7 @@ package com.example.sheandsoul_nick.data
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -20,6 +21,7 @@ class SessionManager(private val context: Context) {
         // Define the key for storing the auth token
         private val AUTH_TOKEN = stringPreferencesKey("auth_token")
         private val FCM_TOKEN = stringPreferencesKey("fcm_token")
+        private val IS_PROFILE_COMPLETE = booleanPreferencesKey("is_profile_complete")
     }
 
     // Function to save the auth token to DataStore
@@ -33,9 +35,18 @@ class SessionManager(private val context: Context) {
             preferences[FCM_TOKEN] = token
         }
     }
+    suspend fun saveProfileCompleteStatus(isComplete: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[IS_PROFILE_COMPLETE] = isComplete
+        }
+    }
     val fcmTokenFlow: Flow<String?> = context.dataStore.data
         .map { preferences ->
             preferences[FCM_TOKEN]
+        }
+    val isProfileCompleteFlow: Flow<Boolean?> = context.dataStore.data
+        .map { preferences ->
+            preferences[IS_PROFILE_COMPLETE]
         }
 
     // A flow to observe the auth token. It will emit null if no token is stored.
@@ -48,6 +59,7 @@ class SessionManager(private val context: Context) {
     suspend fun clearAuthToken() {
         context.dataStore.edit { preferences ->
             preferences.remove(AUTH_TOKEN)
+            preferences.remove(IS_PROFILE_COMPLETE)
         }
     }
 }

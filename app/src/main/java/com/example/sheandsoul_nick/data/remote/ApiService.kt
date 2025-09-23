@@ -32,6 +32,9 @@ interface ApiService {
     @GET("api/article/get") // Corrected the endpoint
     suspend fun getArticles(): Response<List<ArticleDto>>
 
+    @GET("api/profile/status")
+    suspend fun getProfileStatus(): Response<AuthResponse>
+
     @GET("api/article/{id}")
     suspend fun getArticleById(@Path("id") articleId: Long): Response<ArticleDto>
 
@@ -40,8 +43,10 @@ interface ApiService {
 
     @POST("api/pcos/assess")
     suspend fun submitPcosAssessment(@Body request: PCOSAssesmentRequest): Response<PcosAssessmentResponse>
+
     @GET("api/pcos/assessment/status")
     suspend fun getPcosAssessmentStatus(): Response<PcosStatusResponse>
+
     @GET("api/pcos/assessment/latest")
     suspend fun getLatestPcosAssessment(): Response<PcosAssessmentDetailsDto>
 
@@ -52,13 +57,16 @@ interface ApiService {
     suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<SimpleMessageResponse>
 
     @PUT("/api/menstrual-data")
-    suspend fun menstrualData(@Body request : MenstrualData) : Response<MenstrualData>
+    suspend fun menstrualData(@Body request: MenstrualData): Response<MenstrualData>
+
     @GET("/api/next-period")
     suspend fun getNextMenstrualDetails(): Response<NextMenstrualResponse>
 
     @POST("api/notification/send")
     suspend fun sendTestNotification(@Body request: NotificationRequest): Response<Unit>
+
     @PUT("api/profile/device-token")
     suspend fun updateDeviceToken(@Body request: DeviceTokenRequest): Response<Unit> // The response body is not important
-
+    @GET("api/profile/me")
+    suspend fun getUserProfile(): Response<UserProfileDto>
 }

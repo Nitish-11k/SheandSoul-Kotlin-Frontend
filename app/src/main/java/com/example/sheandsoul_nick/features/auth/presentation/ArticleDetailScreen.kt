@@ -1,61 +1,54 @@
-package com.example.sheandsoul_nick.features.articles
+package com.example.sheandsoul_nick.features.auth.presentation
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.sheandsoul_nick.R
-
-// --- FIX START ---
-// Define the data class for an article
-data class Article(
-    val title: String,
-    val imageRes: Int,
-    val content: String
-)
-
-// Define the data class for a category
-data class Category(
-    val name: String,
-    val articles: List<Article>
-)
-
-// Create some sample data to use for the preview
-val sampleCategories = listOf(
-    Category(
-        name = "Sample Category",
-        articles = listOf(
-            Article(
-                title = "A Sample Article Title",
-                imageRes = R.drawable.ic_launcher_background, // Replace with your own drawable
-                content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
-            )
-        )
-    )
-)
-// --- FIX END ---
+import com.example.sheandsoul_nick.features.articles.ArticleViewModel
+import com.example.sheandsoul_nick.features.articles.ArticleViewModelFactory
+import com.example.sheandsoul_nick.features.articles.DataState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleDetailScreen(
-    articleId: Long, // You'll use this ID to fetch the specific article
+    articleId: Long,
+    authViewModel: AuthViewModel,
     onNavigateBack: () -> Unit
 ) {
-    // For now, we use sample data. Later, you'll use the articleId to fetch
-    // the real article from your ViewModel.
-    val article = sampleCategories.first().articles.first()
+    val articleViewModel: ArticleViewModel = viewModel(
+        factory = ArticleViewModelFactory(authViewModel)
+    )
+
+    LaunchedEffect(key1 = articleId) {
+        articleViewModel.fetchArticleById(articleId)
+    }
+
+    val articleState by articleViewModel.selectedArticle.observeAsState()
 
     Scaffold(
         topBar = {
@@ -72,40 +65,95 @@ fun ArticleDetailScreen(
             )
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = article.imageRes),
-                contentDescription = article.title,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(250.dp),
-                contentScale = ContentScale.Crop
-            )
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = article.title,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                Text(
-                    text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\n" +
-                            "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp
-                )
+            when (val state = articleState) {
+                is DataState.Loading -> {
+                    CircularProgressIndicator()
+                }
+                is DataState.Success -> {
+                    val article = state.data
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        AsyncImage(
+                            model = article.imageUrl,
+                            contentDescription = article.title,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(250.dp),
+                            contentScale = ContentScale.Crop,
+                            placeholder = painterResource(id = R.drawable.ic_launcher_background),
+                            error = painterResource(id = R.drawable.ic_launcher_background)
+                        )
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = article.title,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            // ✅ FIX: Using the new FormattedArticleContent composable
+                            FormattedArticleContent(content = article.content ?: "No content available.")
+                        }
+                    }
+                }
+                is DataState.Error -> {
+                    Text(
+                        text = "Error: ${state.message}",
+                        color = Color.Red,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+                null -> {
+                    CircularProgressIndicator()
+                }
             }
         }
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+/**
+ * A composable that takes a raw string and formats it based on Markdown-style hashtags.
+ * - Lines starting with "# " become main headings.
+ * - Lines starting with "## " become subheadings.
+ * - All other lines are treated as regular paragraph text.
+ */
 @Composable
-fun ArticleDetailScreenPreview() {
-    ArticleDetailScreen(articleId = 0, onNavigateBack = {})
+fun FormattedArticleContent(content: String) {
+    val annotatedString = buildAnnotatedString {
+        content.lines().forEach { line ->
+            when {
+                // Style for "# Heading 1" (Higher priority)
+                line.startsWith("# ") -> {
+                    withStyle(style = SpanStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)) {
+                        append(line.removePrefix("# ").trim())
+                    }
+                    append("\n\n") // Add extra space after main headings
+                }
+                // Style for "## Heading 2" (Lower priority)
+                line.startsWith("## ") -> {
+                    withStyle(style = SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)) {
+                        append(line.removePrefix("## ").trim())
+                    }
+                    append("\n\n") // Add extra space after subheadings
+                }
+                // Default style for normal paragraph text
+                else -> {
+                    withStyle(style = SpanStyle(fontSize = 16.sp, lineHeight = 24.sp, color = Color.DarkGray)) {
+                        append(line.trim())
+                    }
+                    append("\n") // Regular line break for paragraphs
+                }
+            }
+        }
+    }
+    Text(text = annotatedString)
 }
+
