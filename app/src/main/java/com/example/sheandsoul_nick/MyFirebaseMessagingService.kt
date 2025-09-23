@@ -6,8 +6,12 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.example.sheandsoul_nick.data.SessionManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
@@ -17,6 +21,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         Log.d("FCM", "New token received: $token")
         // TODO: Send this token to your backend server and associate it with the logged-in user.
         // You'll need to create an API endpoint for this.
+        val sessionManager = SessionManager(applicationContext)
+        CoroutineScope(Dispatchers.IO).launch {
+            sessionManager.saveFcmToken(token)
+            // We don't call the API here directly. The ViewModel will handle it.
+        }
     }
 
     // Called when a message is received while the app is in the foreground.

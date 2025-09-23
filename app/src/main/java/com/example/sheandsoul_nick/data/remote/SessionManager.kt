@@ -19,6 +19,7 @@ class SessionManager(private val context: Context) {
     companion object {
         // Define the key for storing the auth token
         private val AUTH_TOKEN = stringPreferencesKey("auth_token")
+        private val FCM_TOKEN = stringPreferencesKey("fcm_token")
     }
 
     // Function to save the auth token to DataStore
@@ -27,6 +28,15 @@ class SessionManager(private val context: Context) {
             preferences[AUTH_TOKEN] = token
         }
     }
+    suspend fun saveFcmToken(token: String) {
+        context.dataStore.edit { preferences ->
+            preferences[FCM_TOKEN] = token
+        }
+    }
+    val fcmTokenFlow: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            preferences[FCM_TOKEN]
+        }
 
     // A flow to observe the auth token. It will emit null if no token is stored.
     val authTokenFlow: Flow<String?> = context.dataStore.data

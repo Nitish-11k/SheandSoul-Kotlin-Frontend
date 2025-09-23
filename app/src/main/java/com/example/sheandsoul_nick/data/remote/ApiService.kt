@@ -7,6 +7,7 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 
+data class DeviceTokenRequest(val deviceToken: String)
 interface ApiService {
     @POST("api/signup")
     suspend fun signUpUser(@Body request: SignUpRequest): Response<AuthResponse>
@@ -54,5 +55,10 @@ interface ApiService {
     suspend fun menstrualData(@Body request : MenstrualData) : Response<MenstrualData>
     @GET("/api/next-period")
     suspend fun getNextMenstrualDetails(): Response<NextMenstrualResponse>
+
+    @POST("api/notification/send")
+    suspend fun sendTestNotification(@Body request: NotificationRequest): Response<Unit>
+    @PUT("api/profile/device-token")
+    suspend fun updateDeviceToken(@Body request: DeviceTokenRequest): Response<Unit> // The response body is not important
 
 }

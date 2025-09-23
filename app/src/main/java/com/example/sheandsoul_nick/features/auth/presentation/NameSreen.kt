@@ -52,7 +52,7 @@ fun NameScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues) // Apply padding from Scaffold
-                .padding(horizontal = 24.dp) // Apply your own screen padding
+                .padding(horizontal = 24.dp, vertical = 8.dp) // Apply your own screen padding
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth()

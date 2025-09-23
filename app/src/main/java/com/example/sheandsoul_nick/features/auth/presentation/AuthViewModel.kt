@@ -2,6 +2,7 @@ package com.example.sheandsoul_nick.features.auth.presentation
 
 import android.app.Application
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -86,6 +87,27 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 // associated with the token to populate the 'name', 'email' etc.
             }
             isSessionChecked = true
+        }
+    }
+    private fun syncFcmToken() {
+        // Only sync if we have a user auth token
+        if (token == null) return
+
+        viewModelScope.launch {
+            val fcmToken = sessionManager.fcmTokenFlow.firstOrNull()
+            if (!fcmToken.isNullOrBlank()) {
+                try {
+                    val request = DeviceTokenRequest(deviceToken = fcmToken)
+                    val response = apiService.updateDeviceToken(request)
+                    if (response.isSuccessful) {
+                        Log.d("FCM_SYNC", "FCM token successfully synced with backend.")
+                    } else {
+                        Log.e("FCM_SYNC", "Failed to sync FCM token. Response: ${response.errorBody()?.string()}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("FCM_SYNC", "Error syncing FCM token.", e)
+                }
+            }
         }
     }
 
@@ -320,6 +342,22 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 _nextMenstrualResult.postValue(
                     MenstrualResult.Error(e.message ?: "Unexpected error occurred")
                 )
+            }
+        }
+    }
+
+    fun sendTestNotification(token: String) {
+        viewModelScope.launch {
+            try {
+                val request = NotificationRequest(
+                    token = token,
+                    title = "Test from App",
+                    body = "This notification was triggered from the Android app!"
+                )
+                apiService.sendTestNotification(request)
+            } catch (e: Exception) {
+                // Handle error, e.g., show a toast
+                Log.e("NotificationTest", "Failed to send notification", e)
             }
         }
     }

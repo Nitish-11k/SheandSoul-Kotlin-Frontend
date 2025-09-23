@@ -2,92 +2,210 @@ package com.example.sheandsoul_nick.features.auth.presentation
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
+import com.example.sheandsoul_nick.ui.theme.Purple40
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ProfileScreen(
     authViewModel: AuthViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
+    var notificationsEnabled by remember { mutableStateOf(true) }
+    var periodRemindersEnabled by remember { mutableStateOf(true) }
+    var fertileWindowAlertsEnabled by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Profile") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_sheandsoul_text),
+                        contentDescription = "She & Soul Logo",
+                        modifier = Modifier.height(24.dp)
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
             )
         }
     ) { paddingValues ->
-        Column(
+        // ✅ Use a Box to layer the scrolling content and the fixed button
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "Hello, ${authViewModel.name.ifEmpty { "User" }}!",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
+            // ✅ This Column contains only the scrollable content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
+                // Card for Personal Details
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Personal Details", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        InfoRow(label = "Name", value = authViewModel.name.ifEmpty { "N/A" })
+                        InfoRow(label = "Age", value = if (authViewModel.age > 0) "${authViewModel.age} years" else "N/A")
+                        InfoRow(label = "Height", value = if (authViewModel.height > 0) "${authViewModel.height} cm" else "N/A")
+                        InfoRow(label = "Weight", value = if (authViewModel.weight > 0) "${authViewModel.weight} kg" else "N/A")
+                    }
+                }
 
-            Text(
-                text = authViewModel.email,
-                fontSize = 16.sp,
-                color = Color.Gray
-            )
+                Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.weight(1f)) // Pushes the button to the bottom
+                // Card for Health Details
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Menstrual Health", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        InfoRow(label = "Usual Period Length", value = if (authViewModel.period_length > 0) "${authViewModel.period_length} days" else "N/A")
+                        InfoRow(label = "Usual Cycle Length", value = if (authViewModel.cycle_length > 0) "${authViewModel.cycle_length} days" else "N/A")
+                    }
+                }
 
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // New Card for Notification Settings
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Notification Settings", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        SettingRow(
+                            label = "Push Notifications",
+                            isChecked = notificationsEnabled,
+                            onCheckedChange = { notificationsEnabled = it }
+                        )
+                        if (notificationsEnabled) {
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
+                            SettingRow(
+                                label = "Period Reminders",
+                                isChecked = periodRemindersEnabled,
+                                onCheckedChange = { periodRemindersEnabled = it }
+                            )
+                            SettingRow(
+                                label = "Fertile Window Alerts",
+                                isChecked = fertileWindowAlertsEnabled,
+                                onCheckedChange = { fertileWindowAlertsEnabled = it }
+                            )
+                        }
+                    }
+                }
+
+                // ✅ Add padding at the bottom of the scrollable content
+                // to ensure it doesn't get hidden behind the logout button.
+                Spacer(modifier = Modifier.height(100.dp))
+            }
+
+            // ✅ The Logout Button is now a direct child of the Box, aligned to the bottom
             HorizontalWaveButton(
                 onClick = {
                     authViewModel.logout()
                     onNavigateToLogin()
                 },
                 text = "Logout",
-                startColor = Color(0xFFD90429), // A reddish color for logout
+                startColor = Color(0xFFD90429),
                 endColor = Color(0xFFEF233C),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 24.dp) // Add padding around the button
                     .height(50.dp)
+                    .align(Alignment.BottomCenter) // Align to the bottom of the Box
             )
         }
     }
 }
 
-// ✅ ADD THIS PREVIEW FUNCTION
+// ... (InfoRow and SettingRow composables remain the same) ...
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, color = Color.Gray, fontSize = 16.sp)
+        Text(text = value, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+    }
+}
+
+@Composable
+private fun SettingRow(label: String, isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, color = Color.Gray, fontSize = 16.sp)
+        Switch(
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Purple40,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = Color.LightGray
+            )
+        )
+    }
+}
+
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ProfileScreenPreview() {
-    // We create a dummy AuthViewModel for the preview
     val previewAuthViewModel: AuthViewModel = viewModel()
-    // Manually set some data for a realistic preview
     previewAuthViewModel.name = "Maria"
     previewAuthViewModel.email = "maria@example.com"
+    previewAuthViewModel.age = 28
+    previewAuthViewModel.height = 165f
+    previewAuthViewModel.weight = 60f
+    previewAuthViewModel.period_length = 5
+    previewAuthViewModel.cycle_length = 28
 
     ProfileScreen(
         authViewModel = previewAuthViewModel,

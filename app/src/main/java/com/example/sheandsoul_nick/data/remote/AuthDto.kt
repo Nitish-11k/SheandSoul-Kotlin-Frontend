@@ -46,6 +46,7 @@ data class OtpVerificationRequest(
     val email: String,
     val otp: String
 )
+data class NotificationRequest(val token: String, val title: String, val body: String)
 
 data class ResendOtpRequest(
     val email : String
