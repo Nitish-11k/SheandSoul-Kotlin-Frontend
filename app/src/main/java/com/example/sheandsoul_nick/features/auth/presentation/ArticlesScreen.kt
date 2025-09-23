@@ -1,0 +1,393 @@
+package com.example.sheandsoul_nick.features.auth.presentation
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.ListAlt
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.example.sheandsoul_nick.R
+import com.example.sheandsoul_nick.data.remote.ArticleCategoryDto
+import com.example.sheandsoul_nick.data.remote.ArticleDto
+import com.example.sheandsoul_nick.features.articles.ArticleViewModel
+import com.example.sheandsoul_nick.features.articles.ArticleViewModelFactory
+import com.example.sheandsoul_nick.features.articles.DataState
+
+@Composable
+fun ArticlesScreen(
+    authViewModel: AuthViewModel,
+    onNavigateToHome: () -> Unit,
+    onNavigateToCommunity: () -> Unit,
+    onNavigateToMusic: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onArticleClicked: (Long) -> Unit
+) {
+    val articleViewModel: ArticleViewModel = viewModel(
+        factory = ArticleViewModelFactory(authViewModel)
+    )
+    val categoriesState by articleViewModel.categories.observeAsState()
+
+    LaunchedEffect(authViewModel.token) {
+        articleViewModel.loadArticlesIfTokenAvailable()
+    }
+
+    ArticlesScreenContent(
+        categoriesState = categoriesState,
+        onNavigateToHome = onNavigateToHome,
+        onNavigateToCommunity = onNavigateToCommunity,
+        onNavigateToMusic = onNavigateToMusic,
+        onNavigateToProfile = onNavigateToProfile,
+        onArticleClicked = onArticleClicked
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArticleDetailScreen(
+    articleId: Long,
+    authViewModel: AuthViewModel,
+    onNavigateBack: () -> Unit
+) {
+    val articleViewModel: ArticleViewModel = viewModel(
+        factory = ArticleViewModelFactory(authViewModel)
+    )
+
+    LaunchedEffect(key1 = articleId) {
+        articleViewModel.fetchArticleById(articleId)
+    }
+
+    val articleState by articleViewModel.selectedArticle.observeAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Article") },
+                navigationIcon = {
+                    IconButton(onClick = { onNavigateBack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            when (val state = articleState) {
+                is DataState.Loading -> {
+                    CircularProgressIndicator()
+                }
+                is DataState.Success -> {
+                    val article = state.data
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        AsyncImage(
+                            model = article.imageUrl,
+                            contentDescription = article.title,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(250.dp),
+                            contentScale = ContentScale.Crop,
+                            placeholder = painterResource(id = R.drawable.ic_launcher_background),
+                            error = painterResource(id = R.drawable.ic_launcher_background)
+                        )
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = article.title,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            Text(
+                                text = article.content ?: "No content available.",
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp
+                            )
+                        }
+                    }
+                }
+                is DataState.Error -> {
+                    Text(
+                        text = "Error: ${state.message}",
+                        color = Color.Red,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+                null -> {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArticlesScreenContent(
+    categoriesState: DataState<List<ArticleCategoryDto>>?,
+    onNavigateToHome: () -> Unit,
+    onNavigateToCommunity: () -> Unit,
+    onNavigateToMusic: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onArticleClicked: (Long) -> Unit
+) {
+    Scaffold(
+        topBar = { ArticlesTopAppBar() },
+        bottomBar = {
+            AppBottomNavBar(
+                selectedScreen = "Articles",
+                onNavigateToHome = onNavigateToHome,
+                onNavigateToArticles = {},
+                onNavigateToCommunity = onNavigateToCommunity,
+                onNavigateToMusic = onNavigateToMusic,
+                onNavigateToProfile = onNavigateToProfile
+            )
+        },
+        containerColor = Color(0xFFF8F8FF)
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            when (val state = categoriesState) {
+                is DataState.Loading -> {
+                    CircularProgressIndicator()
+                }
+                is DataState.Success -> {
+                    if (state.data.isEmpty()) {
+                        Text(text = "No articles found.")
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(24.dp)
+                        ) {
+                            items(state.data) { category ->
+                                ArticleCategoryRow(
+                                    category = category,
+                                    onArticleClicked = onArticleClicked
+                                )
+                            }
+                        }
+                    }
+                }
+                is DataState.Error -> {
+                    Text(text = state.message)
+                }
+                null -> {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArticlesTopAppBar() {
+    TopAppBar(
+        title = {
+            Text(
+                "Articles",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF9092FF)
+            )
+        },
+        navigationIcon = {
+            Image(
+                painter = painterResource(id = R.drawable.ic_user_avtar),
+                contentDescription = "Profile Picture",
+                modifier = Modifier
+                    .padding(start = 16.dp)
+                    .size(40.dp)
+                    .clip(CircleShape)
+            )
+        },
+        // ✅ The 'actions' block for the notification icon has been removed
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+    )
+}
+
+@Composable
+fun ArticleCategoryRow(category: ArticleCategoryDto, onArticleClicked: (Long) -> Unit) {
+    Column {
+        Text(
+            text = category.name,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        category.articles.chunked(2).forEach { rowArticles ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                rowArticles.forEach { article ->
+                    ArticleCard(
+                        article = article,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onArticleClicked(article.id) }
+                    )
+                }
+                if (rowArticles.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ArticleCard(article: ArticleDto, modifier: Modifier = Modifier) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.height(190.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column {
+            AsyncImage(
+                model = article.imageUrl,
+                contentDescription = article.title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.ic_article_workout),
+                error = painterResource(id = R.drawable.ic_article_workout)
+            )
+            Text(
+                text = article.title,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(12.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 14.sp,
+                lineHeight = 18.sp
+            )
+        }
+    }
+}
+
+
+@Composable
+fun AppBottomNavBar(
+    selectedScreen: String,
+    onNavigateToHome: () -> Unit,
+    onNavigateToArticles: () -> Unit,
+    onNavigateToCommunity: () -> Unit,
+    onNavigateToMusic: () -> Unit,
+    onNavigateToProfile: () -> Unit
+) {
+    var selectedItem by remember { mutableStateOf(selectedScreen) }
+    val items = listOf("Home", "Articles", "Community", "Music")
+
+    NavigationBar(
+        containerColor = Color(0xFFE0BBFF).copy(alpha = 0.5f),
+        tonalElevation = 0.dp
+    ) {
+        items.forEach { screen ->
+            val isSelected = selectedItem == screen
+            NavigationBarItem(
+                selected = isSelected,
+                onClick = {
+                    if (!isSelected) {
+                        selectedItem = screen
+                        when (screen) {
+                            "Home" -> onNavigateToHome()
+                            "Articles" -> onNavigateToArticles()
+                            "Community" -> onNavigateToCommunity()
+                            "Music" -> onNavigateToMusic()
+                            "Profile" -> onNavigateToProfile()
+                        }
+                    }
+                },
+                label = { Text(screen) },
+                icon = { BottomNavIcon(screen = screen, isSelected = isSelected) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color(0xFF9092FF),
+                    unselectedIconColor = Color.Gray,
+                    indicatorColor = Color.White.copy(alpha = 0.6f)
+                )
+            )
+        }
+    }
+}
+
+@Composable
+fun BottomNavIcon(screen: String, isSelected: Boolean) {
+    val icon: ImageVector = when (screen) {
+        "Home" -> if (isSelected) Icons.Filled.Home else Icons.Outlined.Home
+        "Articles" -> if (isSelected) Icons.Filled.ListAlt else Icons.Outlined.ListAlt
+        "Community" -> if (isSelected) Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline
+        "Music" -> if (isSelected) Icons.Filled.LibraryMusic else Icons.Outlined.LibraryMusic
+        else -> Icons.Filled.Home
+    }
+    Icon(imageVector = icon, contentDescription = screen)
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun ArticlesScreenPreview() {
+    val fakeArticles = listOf(
+        ArticleDto(1, "How To Workout During Your Period", "url", "content"),
+        ArticleDto(2, "Menstrual Cups: A Beginner's Guide", "url", "content"),
+        ArticleDto(3, "Understanding Your Menstrual Cycle", "url", "content"),
+        ArticleDto(4, "Nutrition Tips for a Healthy Period", "url", "content")
+    )
+    val fakeCategory = ArticleCategoryDto(name = "Recommended For You", articles = fakeArticles)
+    val fakeState = DataState.Success(listOf(fakeCategory))
+
+    ArticlesScreenContent(
+        categoriesState = fakeState,
+        onNavigateToHome = {},
+        onNavigateToCommunity = {},
+        onNavigateToMusic = {},
+        onNavigateToProfile = {},
+        onArticleClicked = {}
+    )
+}
