@@ -1,6 +1,7 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -46,37 +47,43 @@ fun EditCycleDetailsScreen(
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
 
-    // State for Period Length Picker (Range: 1-7)
-    val periodLengthList = (1..7).toList()
-    val initialPeriodIndex = (authViewModel.period_length - 1).coerceIn(0, periodLengthList.size - 1)
+    // Period Length Picker (1–7 with null padding)
+    val periodLengthList: List<Int?> = listOf(null) + (1..7).toList() + listOf(null)
+    val initialPeriodIndex = authViewModel.period_length.coerceIn(1, 7)
     val periodListState = rememberLazyListState(initialFirstVisibleItemIndex = initialPeriodIndex)
+
     val selectedPeriodLength by remember {
         derivedStateOf {
-            if (periodListState.layoutInfo.visibleItemsInfo.isEmpty()) {
+            val visibleItems = periodListState.layoutInfo.visibleItemsInfo
+            if (visibleItems.isEmpty()) {
                 authViewModel.period_length.coerceIn(1, 7)
             } else {
-                val centerIndex = periodListState.firstVisibleItemIndex + periodListState.layoutInfo.visibleItemsInfo.size / 2
-                periodLengthList.getOrElse(centerIndex) { authViewModel.period_length.coerceIn(1, 7) }
+                val centerIndex =
+                    periodListState.firstVisibleItemIndex + visibleItems.size / 2
+                periodLengthList.getOrNull(centerIndex) ?: authViewModel.period_length
             }
         }
     }
 
-    // State for Cycle Length Picker (Range: 1-28)
-    val cycleLengthList = (1..28).toList()
-    val initialCycleIndex = (authViewModel.cycle_length - 1).coerceIn(0, cycleLengthList.size - 1)
+    // Cycle Length Picker (1–28 with null padding)
+    val cycleLengthList: List<Int?> = listOf(null) + (1..28).toList() + listOf(null)
+    val initialCycleIndex = authViewModel.cycle_length.coerceIn(1, 28)
     val cycleListState = rememberLazyListState(initialFirstVisibleItemIndex = initialCycleIndex)
+
     val selectedCycleLength by remember {
         derivedStateOf {
-            if (cycleListState.layoutInfo.visibleItemsInfo.isEmpty()) {
+            val visibleItems = cycleListState.layoutInfo.visibleItemsInfo
+            if (visibleItems.isEmpty()) {
                 authViewModel.cycle_length.coerceIn(1, 28)
             } else {
-                val centerIndex = cycleListState.firstVisibleItemIndex + cycleListState.layoutInfo.visibleItemsInfo.size / 2
-                cycleLengthList.getOrElse(centerIndex) { authViewModel.cycle_length.coerceIn(1, 28) }
+                val centerIndex =
+                    cycleListState.firstVisibleItemIndex + visibleItems.size / 2
+                cycleLengthList.getOrNull(centerIndex) ?: authViewModel.cycle_length
             }
         }
     }
 
-    // State for Calendar
+    // Calendar states
     val selectedDates = remember { mutableStateListOf<LocalDate>() }
     val currentSystemMonth = YearMonth.now()
     val twoMonthsAgo = currentSystemMonth.minusMonths(2)
@@ -90,7 +97,7 @@ fun EditCycleDetailsScreen(
             is AuthResult.Success -> {
                 isLoading = false
                 Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
-                onNavigateBack() // Go back to home screen on success
+                onNavigateBack()
             }
             is AuthResult.Error -> {
                 isLoading = false
@@ -158,15 +165,29 @@ fun EditCycleDetailsScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             EditMonthNavigationHeader(
                                 currentMonth = currentMonth.value,
-                                onPreviousMonth = { if (currentMonth.value.isAfter(twoMonthsAgo)) currentMonth.value = currentMonth.value.minusMonths(1) },
-                                onNextMonth = { if (currentMonth.value.isBefore(currentSystemMonth)) currentMonth.value = currentMonth.value.plusMonths(1) },
+                                onPreviousMonth = {
+                                    if (currentMonth.value.isAfter(twoMonthsAgo))
+                                        currentMonth.value = currentMonth.value.minusMonths(1)
+                                },
+                                onNextMonth = {
+                                    if (currentMonth.value.isBefore(currentSystemMonth))
+                                        currentMonth.value = currentMonth.value.plusMonths(1)
+                                },
                                 isPreviousEnabled = currentMonth.value.isAfter(twoMonthsAgo),
                                 isNextEnabled = currentMonth.value.isBefore(currentSystemMonth)
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceAround
+                            ) {
                                 listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach {
-                                    Text(it, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                                    Text(
+                                        it,
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.weight(1f)
+                                    )
                                 }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
@@ -186,7 +207,11 @@ fun EditCycleDetailsScreen(
                                             if (selectedDates.size < maxSelectionDays) {
                                                 selectedDates.add(date)
                                             } else {
-                                                Toast.makeText(context, "You can select up to $maxSelectionDays consecutive days.", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(
+                                                    context,
+                                                    "You can select up to $maxSelectionDays consecutive days.",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
                                             }
                                         } else {
                                             selectedDates.clear()
@@ -205,13 +230,18 @@ fun EditCycleDetailsScreen(
                         onClick = {
                             if (selectedDates.isNotEmpty()) {
                                 selectedDates.sort()
-                                authViewModel.period_length = selectedPeriodLength
-                                authViewModel.cycle_length = selectedCycleLength
+                                authViewModel.period_length = selectedPeriodLength-1
+                                authViewModel.cycle_length = selectedCycleLength-1
                                 authViewModel.last_period_start_date = selectedDates.first()
                                 authViewModel.last_period_end_date = selectedDates.last()
+                                Log.i("She&Soul",authViewModel.period_length.toString()+" "+authViewModel.cycle_length+" "+authViewModel.last_period_start_date+" "+authViewModel.last_period_end_date)
                                 authViewModel.updateMenstrualCycleData()
                             } else {
-                                Toast.makeText(context, "Please select at least one date for your last period.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Please select at least one date for your last period.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         },
                         text = "Save Changes",
@@ -243,15 +273,16 @@ fun EditCycleDetailsScreen(
 @Composable
 private fun NumberPickerBox(
     listState: LazyListState,
-    items: List<Int>,
+    items: List<Int?>,
     unit: String
 ) {
     Box(
         modifier = Modifier
-            .height(150.dp) // Shorter picker
+            .height(150.dp)
             .width(180.dp),
         contentAlignment = Alignment.Center
     ) {
+        // Box for selector background
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -271,13 +302,15 @@ private fun NumberPickerBox(
             itemHeight = 50.dp,
             selectorHeight = 50.dp
         ) { item, isSelected ->
-            Text(
-                text = "$item $unit",
-                fontSize = if (isSelected) 28.sp else 20.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
-                textAlign = TextAlign.Center
-            )
+            if (item != null) {
+                Text(
+                    text = "$item $unit",
+                    fontSize = if (isSelected) 28.sp else 20.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -364,4 +397,3 @@ private fun EditCalendarGrid(
         }
     }
 }
-
