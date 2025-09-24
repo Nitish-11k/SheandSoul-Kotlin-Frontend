@@ -35,12 +35,13 @@ import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.data.remote.ApiService
 import com.example.sheandsoul_nick.data.remote.MusicDto
 import com.example.sheandsoul_nick.data.remote.RetrofitClient
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 // ======================================================================
-// 1. Data Models (DTO for API, UI Model for the screen)
+// 1. Data Model for the screen
 // ======================================================================
-
 data class MusicTrack(
     val id: Long,
     val title: String,
@@ -51,37 +52,95 @@ data class MusicTrack(
 )
 
 // ======================================================================
-// 2. ViewModel with Audio Playback Logic and API Fetching
+// 2. ✅ Singleton Music Player (The Core of the Fix)
+// This object lives as long as the app does, providing a single source of truth.
 // ======================================================================
-
-class MusicViewModel(private val authViewModel: AuthViewModel) : ViewModel() {
-    private val apiService: ApiService = RetrofitClient.getInstance(authViewModel)
+object MusicPlayer {
     private var mediaPlayer: MediaPlayer? = null
 
-    // State for the list of music tracks
+    private val _activeTrack = MutableStateFlow<MusicTrack?>(null)
+    val activeTrack = _activeTrack.asStateFlow()
+
+    private val _isPlaying = MutableStateFlow(false)
+    val isPlaying = _isPlaying.asStateFlow()
+
+    private val _loadingTrackId = MutableStateFlow<Long?>(null)
+    val loadingTrackId = _loadingTrackId.asStateFlow()
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage = _errorMessage.asStateFlow()
+
+    fun onPlayPause(track: MusicTrack) {
+        if (activeTrack.value?.id == track.id) {
+            if (mediaPlayer?.isPlaying == true) {
+                mediaPlayer?.pause()
+                _isPlaying.value = false
+            } else {
+                mediaPlayer?.start()
+                _isPlaying.value = true
+            }
+        } else {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
+            _loadingTrackId.value = track.id
+
+            mediaPlayer = MediaPlayer().apply {
+                try {
+                    setDataSource(track.audioUrl)
+                    prepareAsync()
+                    setOnPreparedListener {
+                        start()
+                        _activeTrack.value = track
+                        _isPlaying.value = true
+                        _loadingTrackId.value = null
+                    }
+                    setOnCompletionListener {
+                        _activeTrack.value = null
+                        _isPlaying.value = false
+                    }
+                    setOnErrorListener { _, _, _ ->
+                        _errorMessage.value = "Error playing audio."
+                        _activeTrack.value = null
+                        _isPlaying.value = false
+                        _loadingTrackId.value = null
+                        true
+                    }
+                } catch (e: Exception) {
+                    _errorMessage.value = "Could not play audio: ${e.message}"
+                    _loadingTrackId.value = null
+                }
+            }
+        }
+    }
+
+    fun release() {
+        mediaPlayer?.release()
+        mediaPlayer = null
+        _activeTrack.value = null
+        _isPlaying.value = false
+    }
+}
+
+// ======================================================================
+// 3. ViewModel - Now simplified to act as a bridge to the MusicPlayer
+// ======================================================================
+class MusicViewModel(private val authViewModel: AuthViewModel) : ViewModel() {
+    private val apiService: ApiService = RetrofitClient.getInstance(authViewModel)
+
     private val _musicTracks = mutableStateOf<List<MusicTrack>>(emptyList())
     val musicTracks: State<List<MusicTrack>> = _musicTracks
 
-    // State to indicate if data is currently loading
     private val _isLoading = mutableStateOf(true)
     val isLoading: State<Boolean> = _isLoading
 
-    // State to hold any error messages
     private val _errorMessage = mutableStateOf<String?>(null)
     val errorMessage: State<String?> = _errorMessage
 
-    // --- ✅ STATE REFACTORED FOR PLAYER STATE ---
-    // Holds the track that is loaded in the player (playing or paused)
-    private val _activeTrack = mutableStateOf<MusicTrack?>(null)
-    val activeTrack: State<MusicTrack?> = _activeTrack
-
-    // Tracks if the player is actually playing audio
-    private val _isPlaying = mutableStateOf(false)
-    val isPlaying: State<Boolean> = _isPlaying
-
-    // New state to track the buffering track
-    private val _loadingTrackId = mutableStateOf<Long?>(null)
-    val loadingTrackId: State<Long?> = _loadingTrackId
+    // Expose state directly from the singleton player
+    val activeTrack = MusicPlayer.activeTrack
+    val isPlaying = MusicPlayer.isPlaying
+    val loadingTrackId = MusicPlayer.loadingTrackId
 
     init {
         fetchMusicTracks()
@@ -91,15 +150,10 @@ class MusicViewModel(private val authViewModel: AuthViewModel) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Assuming you have fixed ApiService to return Response<List<MusicDto>>
                 val response = apiService.getMusic()
                 if (response.isSuccessful && response.body() != null) {
                     _musicTracks.value = response.body()!!.map { dto ->
-                        MusicTrack(
-                            id = dto.id,
-                            title = dto.title,
-                            audioUrl = dto.audioUrl
-                        )
+                        MusicTrack(id = dto.id, title = dto.title, audioUrl = dto.audioUrl)
                     }
                 } else {
                     _errorMessage.value = "Failed to load music: ${response.message()}"
@@ -112,65 +166,15 @@ class MusicViewModel(private val authViewModel: AuthViewModel) : ViewModel() {
         }
     }
 
-    // ✅ --- LOGIC UPDATED FOR BETTER STATE MANAGEMENT ---
     fun onPlayPause(track: MusicTrack) {
-        // Case 1: The tapped track is the one already active in the player
-        if (_activeTrack.value?.id == track.id) {
-            if (mediaPlayer?.isPlaying == true) {
-                mediaPlayer?.pause()
-                _isPlaying.value = false
-            } else {
-                mediaPlayer?.start()
-                _isPlaying.value = true
-            }
-        }
-        // Case 2: A new track is selected
-        else {
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
-            mediaPlayer = null
-            _loadingTrackId.value = track.id // Use the loading indicator
-
-            mediaPlayer = MediaPlayer().apply {
-                try {
-                    setDataSource(track.audioUrl)
-                    prepareAsync()
-                    setOnPreparedListener {
-                        start()
-                        _activeTrack.value = track
-                        _isPlaying.value = true
-                        _loadingTrackId.value = null // Clear loading state
-                    }
-                    setOnCompletionListener {
-                        _activeTrack.value = null
-                        _isPlaying.value = false
-                    }
-                    setOnErrorListener { _, _, _ ->
-                        _errorMessage.value = "Error playing audio."
-                        _activeTrack.value = null
-                        _isPlaying.value = false
-                        _loadingTrackId.value = null // Clear loading state on error
-                        true
-                    }
-                } catch (e: Exception) {
-                    _errorMessage.value = "Could not play audio: ${e.message}"
-                    _loadingTrackId.value = null // Clear loading state on exception
-                }
-            }
-        }
-    }
-
-    override fun onCleared() {
-        mediaPlayer?.release()
-        mediaPlayer = null
-        super.onCleared()
+        MusicPlayer.onPlayPause(track)
     }
 }
 
-// ======================================================================
-// 3. ViewModel Factory
-// ======================================================================
 
+// ======================================================================
+// 4. ViewModel Factory (Unchanged)
+// ======================================================================
 class MusicViewModelFactory(private val authViewModel: AuthViewModel) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MusicViewModel::class.java)) {
@@ -182,7 +186,7 @@ class MusicViewModelFactory(private val authViewModel: AuthViewModel) : ViewMode
 }
 
 // ======================================================================
-// 4. Main Screen Composable (Stateful)
+// 5. Main Screen Composable (Stateful - Unchanged signature)
 // ======================================================================
 @Composable
 fun MusicScreen(
@@ -197,10 +201,10 @@ fun MusicScreen(
     val isLoading by musicViewModel.isLoading
     val errorMessage by musicViewModel.errorMessage
 
-    // ✅ Get the new state variables
-    val activeTrack by musicViewModel.activeTrack
-    val isPlaying by musicViewModel.isPlaying
-    val loadingTrackId by musicViewModel.loadingTrackId
+    // Collect state from the singleton via the ViewModel
+    val activeTrack by musicViewModel.activeTrack.collectAsState()
+    val isPlaying by musicViewModel.isPlaying.collectAsState()
+    val loadingTrackId by musicViewModel.loadingTrackId.collectAsState()
 
     errorMessage?.let {
         // You can show a Toast or Snackbar here
@@ -209,7 +213,6 @@ fun MusicScreen(
     MusicScreenContent(
         musicTracks = musicTracks,
         isLoading = isLoading,
-        // ✅ Pass the new state down
         activeTrack = activeTrack,
         isPlaying = isPlaying,
         loadingTrackId = loadingTrackId,
@@ -221,15 +224,16 @@ fun MusicScreen(
     )
 }
 
+
 // ======================================================================
-// 5. UI Content Composable (Stateless)
+// 6. UI Composables (Unchanged)
 // ======================================================================
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicScreenContent(
     musicTracks: List<MusicTrack>,
     isLoading: Boolean,
-    // ✅ Accept the new state variables
     activeTrack: MusicTrack?,
     isPlaying: Boolean,
     loadingTrackId: Long?,
@@ -272,7 +276,6 @@ fun MusicScreenContent(
                 items(musicTracks) { track ->
                     MusicTrackItem(
                         track = track,
-                        // ✅ Update the logic here
                         isPlaying = activeTrack?.id == track.id && isPlaying,
                         isBuffering = loadingTrackId == track.id,
                         onPlayPause = { onPlayPause(track) }
@@ -283,14 +286,10 @@ fun MusicScreenContent(
     }
 }
 
-// ======================================================================
-// 6. Helper UI Composables
-// ======================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicTopAppBar() {
-    // ... (This composable remains unchanged)
     TopAppBar(
         title = {
             Text(
@@ -318,7 +317,6 @@ fun MusicTopAppBar() {
 fun MusicTrackItem(
     track: MusicTrack,
     isPlaying: Boolean,
-    // ✅ Accept the new buffering state
     isBuffering: Boolean,
     onPlayPause: () -> Unit
 ) {
@@ -339,9 +337,8 @@ fun MusicTrackItem(
                 .background(horizontalGradient),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // ✅ This is the key UI change for the loading indicator
             Box(
-                modifier = Modifier.size(56.dp), // Give the box a consistent size for alignment
+                modifier = Modifier.size(56.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (isBuffering) {
@@ -386,9 +383,6 @@ fun MusicTrackItem(
     }
 }
 
-// ======================================================================
-// 7. Preview
-// ======================================================================
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun MusicScreenPreview() {
@@ -400,8 +394,8 @@ fun MusicScreenPreview() {
     MusicScreenContent(
         musicTracks = sampleTracks,
         isLoading = false,
-        activeTrack = sampleTracks.first(), // Preview with an active track
-        isPlaying = true, // Preview in a "playing" state
+        activeTrack = sampleTracks.first(),
+        isPlaying = true,
         loadingTrackId = null,
         onPlayPause = { },
         onNavigateToHome = {},
