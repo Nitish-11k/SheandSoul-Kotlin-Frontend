@@ -74,94 +74,6 @@ fun ArticlesScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ArticleDetailScreen(
-    articleId: Long,
-    authViewModel: AuthViewModel,
-    onNavigateBack: () -> Unit
-) {
-    val articleViewModel: ArticleViewModel = viewModel(
-        factory = ArticleViewModelFactory(authViewModel)
-    )
-
-    LaunchedEffect(key1 = articleId) {
-        articleViewModel.fetchArticleById(articleId)
-    }
-
-    val articleState by articleViewModel.selectedArticle.observeAsState()
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Article") },
-                navigationIcon = {
-                    IconButton(onClick = { onNavigateBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
-        ) {
-            when (val state = articleState) {
-                is DataState.Loading -> {
-                    CircularProgressIndicator()
-                }
-                is DataState.Success -> {
-                    val article = state.data
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        AsyncImage(
-                            model = article.imageUrl,
-                            contentDescription = article.title,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(250.dp),
-                            contentScale = ContentScale.Crop,
-                            placeholder = painterResource(id = R.drawable.ic_launcher_background),
-                            error = painterResource(id = R.drawable.ic_launcher_background)
-                        )
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = article.title,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-                            Text(
-                                text = article.content ?: "No content available.",
-                                fontSize = 16.sp,
-                                lineHeight = 24.sp
-                            )
-                        }
-                    }
-                }
-                is DataState.Error -> {
-                    Text(
-                        text = "Error: ${state.message}",
-                        color = Color.Red,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-                null -> {
-                    CircularProgressIndicator()
-                }
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -174,7 +86,7 @@ fun ArticlesScreenContent(
     onArticleClicked: (Long) -> Unit
 ) {
     Scaffold(
-        topBar = { ArticlesTopAppBar() },
+        topBar = { ArticlesTopAppBar(onProfileClick = onNavigateToProfile) },
         bottomBar = {
             AppBottomNavBar(
                 selectedScreen = "Articles",
@@ -228,7 +140,7 @@ fun ArticlesScreenContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArticlesTopAppBar() {
+fun ArticlesTopAppBar(onProfileClick: () -> Unit) {
     TopAppBar(
         title = {
             Text(

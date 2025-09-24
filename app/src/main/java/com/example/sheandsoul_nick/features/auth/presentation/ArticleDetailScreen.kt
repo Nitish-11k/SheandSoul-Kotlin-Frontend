@@ -1,7 +1,9 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,13 +19,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+// Make sure these imports are present
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -93,13 +99,7 @@ fun ArticleDetailScreen(
                             error = painterResource(id = R.drawable.ic_launcher_background)
                         )
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = article.title,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-                            // ✅ FIX: Using the new FormattedArticleContent composable
+                            // ✅ Title is now part of content (as # ...)
                             FormattedArticleContent(content = article.content ?: "No content available.")
                         }
                     }
@@ -118,42 +118,126 @@ fun ArticleDetailScreen(
         }
     }
 }
-
-/**
- * A composable that takes a raw string and formats it based on Markdown-style hashtags.
- * - Lines starting with "# " become main headings.
- * - Lines starting with "## " become subheadings.
- * - All other lines are treated as regular paragraph text.
- */
 @Composable
 fun FormattedArticleContent(content: String) {
-    val annotatedString = buildAnnotatedString {
-        content.lines().forEach { line ->
+    val lines = content.lines()
+
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        lines.forEach { line ->
+            val trimmedLine = line.trim()
             when {
-                // Style for "# Heading 1" (Higher priority)
-                line.startsWith("# ") -> {
-                    withStyle(style = SpanStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)) {
-                        append(line.removePrefix("# ").trim())
+                // Handle #, ##, ###, ####
+                trimmedLine.startsWith("#") -> {
+                    var level = 0
+                    var i = 0
+                    while (i < trimmedLine.length && trimmedLine[i] == '#') {
+                        level++
+                        i++
                     }
-                    append("\n\n") // Add extra space after main headings
-                }
-                // Style for "## Heading 2" (Lower priority)
-                line.startsWith("## ") -> {
-                    withStyle(style = SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)) {
-                        append(line.removePrefix("## ").trim())
+
+                    // Must have at least one space after #
+                    val hasSpaceAfter = i < trimmedLine.length && trimmedLine[i] == ' '
+                    if (level in 1..6 && hasSpaceAfter) {
+                        val headingText = trimmedLine.substring(i + 1).trim()
+
+                        val headingStyle = when (level) {
+                            1 -> Triple(24.sp, FontWeight.Bold, Color.Black)
+                            2 -> Triple(22.sp, FontWeight.SemiBold, Color.DarkGray)
+                            3 -> Triple(20.sp, FontWeight.Medium, Color.DarkGray)
+                            4 -> Triple(18.sp, FontWeight.Normal, Color.DarkGray)
+                            else -> Triple(16.sp, FontWeight.Normal, Color.Gray)
+                        }
+
+                        val padding = when (level) {
+                            1 -> Pair(20.dp, 12.dp)
+                            2 -> Pair(16.dp, 10.dp)
+                            3 -> Pair(12.dp, 8.dp)
+                            4 -> Pair(10.dp, 6.dp)
+                            else -> Pair(8.dp, 4.dp)
+                        }
+
+                        Text(
+                            text = headingText,
+                            fontSize = headingStyle.first,
+                            fontWeight = headingStyle.second,
+                            color = headingStyle.third,
+                            modifier = Modifier.padding(top = padding.first, bottom = padding.second)
+                        )
+                    } else {
+                        // Not a valid heading (e.g., "###no space"), treat as paragraph
+                        renderParagraph(trimmedLine)
                     }
-                    append("\n\n") // Add extra space after subheadings
                 }
-                // Default style for normal paragraph text
+                trimmedLine.startsWith("* ") || trimmedLine.startsWith("- ") -> {
+                    val listItemText = trimmedLine.substring(2).trim()
+                    RichText(
+                        text = listItemText,
+                        fontSize = 16.sp,
+                        color = Color.DarkGray,
+                        lineHeight = 24.sp
+                    )
+                }
+                trimmedLine.isNotEmpty() -> {
+                    renderParagraph(trimmedLine)
+                }
                 else -> {
-                    withStyle(style = SpanStyle(fontSize = 16.sp, lineHeight = 24.sp, color = Color.DarkGray)) {
-                        append(line.trim())
-                    }
-                    append("\n") // Regular line break for paragraphs
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
     }
-    Text(text = annotatedString)
 }
 
+@Composable
+private fun renderParagraph(text: String) {
+    RichText(
+        text = text,
+        fontSize = 16.sp,
+        color = Color.DarkGray,
+        lineHeight = 24.sp
+    )
+}
+
+// ✅ Helper Functions Below
+
+fun parseMarkdownBold(text: String): AnnotatedString {
+    val builder = AnnotatedString.Builder()
+    val regex = Regex("""(\*\*|__)(.*?)\1""")
+    var lastIndex = 0
+
+    for (match in regex.findAll(text)) {
+        if (match.range.first > lastIndex) {
+            builder.append(text.substring(lastIndex, match.range.first))
+        }
+        val boldContent = match.groupValues[2]
+        builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+            append(boldContent)
+        }
+        lastIndex = match.range.last + 1
+    }
+
+    if (lastIndex < text.length) {
+        builder.append(text.substring(lastIndex))
+    }
+
+    return builder.toAnnotatedString()
+}
+
+@Composable
+fun RichText(
+    text: String,
+    fontSize: TextUnit = 16.sp,
+    color: Color = Color.DarkGray,
+    lineHeight: TextUnit = 24.sp
+) {
+    val annotated = parseMarkdownBold(text)
+    Text(
+        text = annotated,
+        fontSize = fontSize,
+        color = color,
+        lineHeight = lineHeight
+    )
+}

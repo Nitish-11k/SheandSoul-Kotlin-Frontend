@@ -23,7 +23,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.sheandsoul_nick.features.articles.ArticleDetailScreen
 import com.example.sheandsoul_nick.features.auth.presentation.*
 import com.example.sheandsoul_nick.features.home.HomeScreen
 import com.example.sheandsoul_nick.ui.theme.SheAndSoulNickTheme

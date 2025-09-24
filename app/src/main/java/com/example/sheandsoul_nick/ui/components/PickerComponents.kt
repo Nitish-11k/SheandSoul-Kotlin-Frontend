@@ -1,4 +1,3 @@
-
 package com.example.sheandsoul_nick.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -68,7 +67,6 @@ fun <T> VerticalNumberPicker(
         }
     }
 
-    // Auto snap when scroll stops
     LaunchedEffect(listState.isScrollInProgress) {
         if (!listState.isScrollInProgress) {
             val visibleInfo = listState.layoutInfo.visibleItemsInfo
@@ -84,7 +82,6 @@ fun <T> VerticalNumberPicker(
             }
         }
     }
-
 
 
     LazyColumn(

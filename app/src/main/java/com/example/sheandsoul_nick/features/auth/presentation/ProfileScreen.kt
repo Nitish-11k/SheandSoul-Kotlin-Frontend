@@ -1,13 +1,17 @@
+// file: app/src/main/java/com/example/sheandsoul_nick/features/auth/presentation/ProfileScreen.kt
+
 package com.example.sheandsoul_nick.features.auth.presentation
 
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +39,14 @@ fun ProfileScreen(
     var periodRemindersEnabled by remember { mutableStateOf(true) }
     var fertileWindowAlertsEnabled by remember { mutableStateOf(false) }
 
+    // State to control the visibility of the bottom sheet
+    var showPolicySheet by remember { mutableStateOf(false) }
+
+    // When showPolicySheet becomes true, the sheet is displayed
+    if (showPolicySheet) {
+        PrivacyAndTermsSheet(onDismiss = { showPolicySheet = false })
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -55,13 +67,11 @@ fun ProfileScreen(
             )
         }
     ) { paddingValues ->
-        // ✅ Use a Box to layer the scrolling content and the fixed button
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // ✅ This Column contains only the scrollable content
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -103,7 +113,7 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // New Card for Notification Settings
+                // Card for Notification Settings
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -132,12 +142,36 @@ fun ProfileScreen(
                     }
                 }
 
-                // ✅ Add padding at the bottom of the scrollable content
-                // to ensure it doesn't get hidden behind the logout button.
-                Spacer(modifier = Modifier.height(100.dp))
+                // New Card for "About & Legal"
+                Spacer(modifier = Modifier.height(24.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("About & Legal", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showPolicySheet = true } // This opens the sheet
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "Privacy Policy & Terms of Use", color = Color.Gray, fontSize = 16.sp)
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "View details",
+                                tint = Color.Gray
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(100.dp)) // Padding for the logout button
             }
 
-            // ✅ The Logout Button is now a direct child of the Box, aligned to the bottom
             HorizontalWaveButton(
                 onClick = {
                     authViewModel.logout()
@@ -148,15 +182,15 @@ fun ProfileScreen(
                 endColor = Color(0xFFEF233C),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 24.dp) // Add padding around the button
+                    .padding(horizontal = 24.dp, vertical = 24.dp)
                     .height(50.dp)
-                    .align(Alignment.BottomCenter) // Align to the bottom of the Box
+                    .align(Alignment.BottomCenter)
             )
         }
     }
 }
 
-// ... (InfoRow and SettingRow composables remain the same) ...
+
 @Composable
 private fun InfoRow(label: String, value: String) {
     Row(

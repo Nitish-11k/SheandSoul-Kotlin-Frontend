@@ -33,7 +33,7 @@ fun UsualPeriodLengthScreen(
     onContinueClicked:()->Unit,
     authViewModel: AuthViewModel
 ) {
-    val daysList = (1..10).toList()
+    val daysList = (1..7).toList()
     val defaultPeriodLength = 5
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = daysList.indexOf(defaultPeriodLength).coerceAtLeast(0))
 

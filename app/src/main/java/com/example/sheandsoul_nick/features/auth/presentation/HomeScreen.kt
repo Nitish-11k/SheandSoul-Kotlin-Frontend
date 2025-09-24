@@ -18,18 +18,23 @@ import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -212,7 +217,8 @@ fun PeriodTrackerCard(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 14.dp)
     ) {
         Column(
             modifier = Modifier
@@ -260,7 +266,7 @@ fun PeriodTrackerCard(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Button(
+            OutlinedButton(
                 onClick = onEditCycleClick,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0FF))
@@ -305,22 +311,31 @@ fun FertilityCard(
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
+            // ✅ FIXED: Replaced the Canvas with a simple Box for the circular gradient
+            // Using a Box with a background gradient is simpler and more Compose-native than using a Canvas.
             Box(
                 modifier = Modifier
                     .size(80.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE0E0FF))
-            )
+            ) {
+                // Use a Canvas only if you need complex drawing.
+                // For a simple icon, just use an Icon composable.
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_fertility_icon), // Replace with your actual icon
+                    contentDescription = "Fertility Indicator",
+                    tint = Color(0xFF9092FF),
+                    modifier = Modifier.size(80.dp)
+                        .padding(2.dp)
+                )
+            }
         }
     }
 }
-
 @Composable
 fun AddPartnerCard(onClick: () -> Unit) {
     Card(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ){
         Row(
             modifier = Modifier
@@ -340,7 +355,7 @@ fun AddPartnerCard(onClick: () -> Unit) {
             ) {
                 Text("Add Your Partner", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Text("Share Your Journey, Let Him Walk Beside You", color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
-                Button(
+                OutlinedButton(
                     onClick = { onClick() },
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -372,7 +387,9 @@ fun PcosAssessmentCard(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+
     ) {
         Column(
             modifier = Modifier
@@ -397,18 +414,21 @@ fun PcosAssessmentCard(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Button(
+                OutlinedButton(
                     onClick = onStartAssessmentClick,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0FF)),
                     modifier = Modifier.weight(1f)
+                        .shadow(4.dp, shape = RoundedCornerShape(12.dp))
                 ) {
-                    Text("Start/Re-take Quiz", color = Color(0xFF9092FF))
+                    Text("Start/Re-take Assessment", color = Color(0xFF9092FF))
                 }
                 OutlinedButton(
                     onClick = onViewDashboardClick,
                     shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0FF)),
                     modifier = Modifier.weight(1f)
+                   .shadow(4.dp, shape = RoundedCornerShape(12.dp))
                 ) {
                     Text("View Dashboard", color = Color(0xFF9092FF))
                 }
