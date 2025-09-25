@@ -6,7 +6,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "https://sheandsoulversion1.onrender.com/"
+    private const val BASE_URL = "https://sheandsoulrender.onrender.com/"
 
     // Pass the ViewModel to get the token
     fun getInstance(authViewModel: AuthViewModel): ApiService {

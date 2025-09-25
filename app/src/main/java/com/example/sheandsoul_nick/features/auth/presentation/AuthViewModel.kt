@@ -159,6 +159,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         _profileCreationResult.value = AuthResult.Loading
         viewModelScope.launch {
             try {
+                val fcmToken = sessionManager.fcmTokenFlow.firstOrNull()
+
                 // ... (The profile creation part remains the same)
                 val profileRequest = CreateProfileRequest(
                     name = name,
@@ -166,7 +168,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     role = role?.name ?: "USER",
                     age = age,
                     height = height,
-                    weight = weight
+                    weight = weight,
+                    deviceToken = fcmToken
                 )
                 val profileResponse = apiService.createProfile(profileRequest)
 

@@ -60,7 +60,8 @@ data class CreateProfileRequest(
     val role: String,
     val age: Int,
     val height : Float,
-    val weight: Float
+    val weight: Float,
+    val deviceToken: String?
 )
 data class MenstrualData(
     val periodLength : Int,

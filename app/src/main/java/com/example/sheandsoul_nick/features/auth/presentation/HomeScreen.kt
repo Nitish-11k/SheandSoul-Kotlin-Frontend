@@ -1,6 +1,7 @@
 package com.example.sheandsoul_nick.features.home
 
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -49,8 +51,11 @@ import com.example.sheandsoul_nick.data.remote.ArticleDto
 import com.example.sheandsoul_nick.features.articles.ArticleViewModel
 import com.example.sheandsoul_nick.features.articles.ArticleViewModelFactory
 import com.example.sheandsoul_nick.features.articles.DataState
+import com.example.sheandsoul_nick.features.auth.presentation.AssessmentUiState
 import com.example.sheandsoul_nick.features.auth.presentation.AuthViewModel
 import com.example.sheandsoul_nick.features.auth.presentation.MenstrualResult
+import com.example.sheandsoul_nick.features.auth.presentation.PcosDashboardViewModel
+import com.example.sheandsoul_nick.features.auth.presentation.PcosDashboardViewModelFactory
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -73,6 +78,13 @@ fun HomeScreen(
     val articleViewModel: ArticleViewModel = viewModel(factory = ArticleViewModelFactory(authViewModel))
     val articlesState by articleViewModel.categories.observeAsState()
     val menstrualResult by authViewModel.nextMenstrualResult.observeAsState()
+    val pcosDashboardViewModel: PcosDashboardViewModel = viewModel(factory = PcosDashboardViewModelFactory(
+        authViewModel
+    )
+    )
+    val pcosState by pcosDashboardViewModel.assessmentState
+    val context = LocalContext.current
+
 
     LaunchedEffect(key1 = authViewModel.token) {
         if(authViewModel.token != null) {
@@ -160,7 +172,22 @@ fun HomeScreen(
             item {
                 PcosAssessmentCard(
                     onStartAssessmentClick = onNavigateToPcosQuiz,
-                    onViewDashboardClick = onNavigateToPcosDashboard
+                    onViewDashboardClick = {
+                        when (pcosState) {
+                            is AssessmentUiState.Success -> {
+                                // User has data, go to the dashboard
+                                onNavigateToPcosDashboard()
+                            }
+                            is AssessmentUiState.NoAssessment, is AssessmentUiState.Error -> {
+                                // No data or error, send them straight to the quiz
+                                onNavigateToPcosQuiz()
+                            }
+                            is AssessmentUiState.Loading -> {
+                                // Optional: Show a toast to let the user know it's working
+                                Toast.makeText(context, "Checking assessment status...", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
                 )
             }
             item {
@@ -266,7 +293,7 @@ fun PeriodTrackerCard(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            OutlinedButton(
+            Button(
                 onClick = onEditCycleClick,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0FF))
@@ -286,6 +313,7 @@ fun FertilityCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier.fillMaxWidth()
+            .shadow(3.dp, shape = RoundedCornerShape(16.dp))
     ) {
         Row(
             modifier = Modifier.padding(24.dp),
@@ -355,7 +383,7 @@ fun AddPartnerCard(onClick: () -> Unit) {
             ) {
                 Text("Add Your Partner", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Text("Share Your Journey, Let Him Walk Beside You", color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
-                OutlinedButton(
+                Button(
                     onClick = { onClick() },
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -414,7 +442,7 @@ fun PcosAssessmentCard(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                OutlinedButton(
+                Button(
                     onClick = onStartAssessmentClick,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0FF)),
@@ -423,7 +451,7 @@ fun PcosAssessmentCard(
                 ) {
                     Text("Start/Re-take Assessment", color = Color(0xFF9092FF))
                 }
-                OutlinedButton(
+                Button(
                     onClick = onViewDashboardClick,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0FF)),

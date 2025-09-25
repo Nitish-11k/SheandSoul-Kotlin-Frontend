@@ -1,5 +1,7 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
+import android.content.Context
+import android.content.Intent
 import android.media.MediaPlayer
 import android.util.Log
 import androidx.compose.foundation.Image
@@ -21,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,6 +34,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.sheandsoul_nick.MusicPlaybackService
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.data.remote.ApiService
 import com.example.sheandsoul_nick.data.remote.MusicDto
@@ -165,6 +169,29 @@ class MusicViewModel(private val authViewModel: AuthViewModel) : ViewModel() {
             }
         }
     }
+    fun onPlayPause(context: Context, track: MusicTrack) {
+        // Instead of playing directly, we send a command to the service
+        val intent = Intent(context, MusicPlaybackService::class.java).apply {
+            // You can pass the track URL or ID in the intent
+            action = "PLAY" // Define custom actions
+            putExtra("TRACK_URL", track.audioUrl)
+        }
+        context.startService(intent)
+    }
+
+    fun onNext(context: Context) {
+        val intent = Intent(context, MusicPlaybackService::class.java).apply {
+            action = "NEXT"
+        }
+        context.startService(intent)
+    }
+
+    fun onPrevious(context: Context) {
+        val intent = Intent(context, MusicPlaybackService::class.java).apply {
+            action = "PREVIOUS"
+        }
+        context.startService(intent)
+    }
 
     fun onPlayPause(track: MusicTrack) {
         MusicPlayer.onPlayPause(track)
@@ -200,6 +227,7 @@ fun MusicScreen(
     val musicTracks by musicViewModel.musicTracks
     val isLoading by musicViewModel.isLoading
     val errorMessage by musicViewModel.errorMessage
+    val context = LocalContext.current
 
     // Collect state from the singleton via the ViewModel
     val activeTrack by musicViewModel.activeTrack.collectAsState()
@@ -244,7 +272,7 @@ fun MusicScreenContent(
     onNavigateToProfile: () -> Unit
 ) {
     Scaffold(
-        topBar = { MusicTopAppBar() },
+        topBar = { MusicTopAppBar(onProfileClick = onNavigateToProfile) },
         bottomBar = {
             AppBottomNavBar(
                 selectedScreen = "Music",
@@ -289,7 +317,7 @@ fun MusicScreenContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MusicTopAppBar() {
+fun MusicTopAppBar(onProfileClick: () -> Unit) {
     TopAppBar(
         title = {
             Text(
@@ -307,7 +335,8 @@ fun MusicTopAppBar() {
                     .padding(start = 16.dp)
                     .size(40.dp)
                     .clip(CircleShape)
-            )
+                    .clickable { onProfileClick()}
+                        )
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
     )
@@ -321,6 +350,7 @@ fun MusicTrackItem(
     onPlayPause: () -> Unit
 ) {
     val horizontalGradient = Brush.horizontalGradient(colors = track.gradientColors)
+
 
     Card(
         shape = RoundedCornerShape(16.dp),

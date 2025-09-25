@@ -158,6 +158,7 @@ fun ArticlesTopAppBar(onProfileClick: () -> Unit) {
                     .padding(start = 16.dp)
                     .size(40.dp)
                     .clip(CircleShape)
+                    .clickable{onProfileClick()}
             )
         },
         // ✅ The 'actions' block for the notification icon has been removed
@@ -257,7 +258,7 @@ fun AppBottomNavBar(
                             "Articles" -> onNavigateToArticles()
                             "Community" -> onNavigateToCommunity()
                             "Music" -> onNavigateToMusic()
-                            "Profile" -> onNavigateToProfile()
+
                         }
                     }
                 },

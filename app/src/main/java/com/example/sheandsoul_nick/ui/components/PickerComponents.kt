@@ -1,15 +1,25 @@
 package com.example.sheandsoul_nick.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,60 +51,62 @@ fun ToggleButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifie
 
 @Composable
 fun <T> VerticalNumberPicker(
-    listState: androidx.compose.foundation.lazy.LazyListState,
+    listState: LazyListState,
     items: List<T>,
     itemHeight: Dp,
-    selectorHeight: Dp = 60.dp, // default matches your box
+    selectorHeight: Dp = 60.dp,
     content: @Composable (T, Boolean) -> Unit
 ) {
-    val itemHeightPx = with(LocalDensity.current) { itemHeight.toPx() }
-    val selectorHeightPx = with(LocalDensity.current) { selectorHeight.toPx() }
 
-    // ✅ Corrected selected index calculation
-    val selectedIndex by remember {
+    // Selected index from center
+    val selectedIndexState = remember(listState) {
         derivedStateOf {
-            val visibleInfo = listState.layoutInfo.visibleItemsInfo
-            if (visibleInfo.isEmpty()) return@derivedStateOf 0
-
-            val selectionCenter =
-                (listState.layoutInfo.viewportEndOffset + listState.layoutInfo.viewportStartOffset) / 2
-
-            val adjustedCenter = selectionCenter + (selectorHeightPx / 2) - (itemHeightPx / 2)
-
-            visibleInfo.minByOrNull {
-                kotlin.math.abs((it.offset + it.size / 2) - adjustedCenter)
-            }?.index ?: 0
+            val layoutInfo = listState.layoutInfo
+            val visible = layoutInfo.visibleItemsInfo
+            if (visible.isEmpty()) return@derivedStateOf 0
+            val viewportCenter = layoutInfo.viewportSize.height / 2f
+            visible.minByOrNull { item ->
+                abs((item.offset + item.size / 2f) - viewportCenter)
+            }?.index ?: visible.first().index
         }
     }
 
-    // Auto snap when scroll stops
-    LaunchedEffect(listState.isScrollInProgress) {
-        if (!listState.isScrollInProgress) {
-            val visibleInfo = listState.layoutInfo.visibleItemsInfo
-            if (visibleInfo.isNotEmpty()) {
-                val selectionCenter = listState.layoutInfo.viewportEndOffset / 2
+    // Snap correctly after fling ends
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }
+            .collect { isScrolling ->
+                if (!isScrolling) {
+                    val layoutInfo = listState.layoutInfo
+                    val visible = layoutInfo.visibleItemsInfo
+                    if (visible.isNotEmpty()) {
+                        val viewportCenter = layoutInfo.viewportSize.height / 2f
+                        val nearest = visible.minByOrNull { item ->
+                            abs((item.offset + item.size / 2f) - viewportCenter)
+                        }
 
-                val nearest = visibleInfo.minByOrNull {
-                    abs((it.offset + it.size / 2) - selectionCenter)
-                }
-                nearest?.let {
-                    listState.animateScrollToItem(it.index)
+                        nearest?.let { item ->
+                            val itemCenter = item.offset + item.size / 2f
+                            val diff = (itemCenter - viewportCenter).roundToInt()
+
+                            // Scroll by the exact difference instead of next item
+                            if (diff != 0) {
+                                listState.scrollBy(diff.toFloat())
+                            }
+                        }
+                    }
                 }
             }
-        }
     }
-
-
 
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = itemHeight * 3),
+        contentPadding = PaddingValues(vertical = (selectorHeight - itemHeight) / 2),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         items(items.size) { index ->
             val item = items[index]
-            val isSelected = index == selectedIndex
+            val isSelected = index == selectedIndexState.value
 
             Box(
                 modifier = Modifier.height(itemHeight),
@@ -105,3 +117,5 @@ fun <T> VerticalNumberPicker(
         }
     }
 }
+
+

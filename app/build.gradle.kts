@@ -73,6 +73,11 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    implementation("androidx.media:media:1.7.0")
+    implementation("androidx.media3:media3-exoplayer:1.3.1")
+    implementation("androidx.media3:media3-ui:1.3.1")
+    implementation("androidx.media3:media3-session:1.3.1")
     implementation(libs.play.services.auth)
     implementation(libs.ui)
     implementation(libs.material3)

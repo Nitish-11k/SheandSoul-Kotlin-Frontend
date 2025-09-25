@@ -115,7 +115,7 @@ fun UsualPeriodLengthScreen(
 
         HorizontalWaveButton(
             onClick = {
-                authViewModel.period_length = selectedDay-3
+                authViewModel.period_length = selectedDay
                 Log.d("She&Soul", "Selected Period Duration: $selectedDay days ${authViewModel.period_length}")
                 onContinueClicked()
             },

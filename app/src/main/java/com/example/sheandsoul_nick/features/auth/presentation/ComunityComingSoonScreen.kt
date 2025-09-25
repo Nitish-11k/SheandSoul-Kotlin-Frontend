@@ -1,6 +1,7 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,7 +34,7 @@ fun CommunityComingSoonScreen(
 ) {
     Scaffold(
         // You can reuse your ArticlesTopAppBar or create a new one
-        topBar = { CommunityTopAppBar() },
+        topBar = { CommunityTopAppBar(onProfileClick = onNavigateToProfile) },
         bottomBar = {
             AppBottomNavBar(
                 selectedScreen = "Community",
@@ -101,7 +102,7 @@ fun CommunityComingSoonScreen(
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommunityTopAppBar() {
+fun CommunityTopAppBar(onProfileClick: () -> Unit) {
     TopAppBar(
         title = {
             Text(
@@ -119,6 +120,7 @@ fun CommunityTopAppBar() {
                     .padding(start = 16.dp)
                     .size(40.dp)
                     .clip(CircleShape)
+                    .clickable{onProfileClick()}
             )
         },
 
