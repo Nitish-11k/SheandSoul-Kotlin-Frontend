@@ -36,8 +36,9 @@ fun NicknameScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp), // Add horizontal padding for the whole screen
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp) // Add horizontal padding for the whole screen
+            .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
         // This inner Column holds the main content and uses 'weight'

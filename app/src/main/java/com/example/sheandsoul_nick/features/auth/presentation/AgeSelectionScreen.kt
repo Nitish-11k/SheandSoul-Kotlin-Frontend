@@ -33,6 +33,7 @@ import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -44,29 +45,43 @@ fun AgeSelectionScreen(
     val minAge = 10
     val maxAge = 80
     val totalAges = maxAge - minAge + 1
-
-    val defaultAge = 10
+    val defaultAge = 25 // A more common default age
     var selectedAge by remember { mutableStateOf(defaultAge) }
 
     val listState = rememberLazyListState()
     val itemWidthDp = 12.dp
     val itemWidthPx = with(LocalDensity.current) { itemWidthDp.toPx() }
-    val circleSize = 200.dp
 
-    // Scroll to selected age and center it
-    val centerOffsetPx = with(LocalDensity.current) { (circleSize / 2 - itemWidthDp / 2).toPx().roundToInt() }
+    // ✨ --- START OF FIXES --- ✨
 
+    // 1. Make the circle size responsive to the screen width
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val circleSize = screenWidth * 0.6f // The circle will now be 60% of the screen's width
+
+    // The ruler's padding calculation is already responsive, which is great!
+    val contentPaddingDp = (screenWidth / 2) - (itemWidthDp / 2)
+
+    // Scroll to a better default age on first launch
     LaunchedEffect(Unit) {
-        val initialIndex = defaultAge - minAge
-        listState.scrollToItem(initialIndex, centerOffsetPx)
+        val initialIndex = (defaultAge - minAge).coerceIn(0, totalAges - 1)
+        // We use animateScrollToItem for a smoother initial centering
+        listState.animateScrollToItem(initialIndex)
     }
 
-    // Update selected age while scrolling
+    // Update selected age while scrolling (this logic is good)
     LaunchedEffect(listState) {
         snapshotFlow {
-            listState.firstVisibleItemIndex + listState.firstVisibleItemScrollOffset / itemWidthPx
-        }.map { scrollIndex ->
-            minAge + scrollIndex.toInt()
+            // Calculate the center item index more accurately
+            val layoutInfo = listState.layoutInfo
+            val visibleItemsInfo = layoutInfo.visibleItemsInfo
+            if (visibleItemsInfo.isEmpty()) {
+                return@snapshotFlow defaultAge
+            }
+            val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2
+            val centerItem = visibleItemsInfo.minByOrNull {
+                abs((it.offset + it.size / 2) - viewportCenter)
+            }
+            centerItem?.index?.let { minAge + it } ?: selectedAge
         }.distinctUntilChanged().collect { age ->
             selectedAge = age.coerceIn(minAge, maxAge)
         }
@@ -75,7 +90,8 @@ fun AgeSelectionScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 24.dp),
+            .navigationBarsPadding() // 2. Add padding to avoid system navigation
+            .imePadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(24.dp))
@@ -86,7 +102,8 @@ fun AgeSelectionScreen(
             modifier = Modifier.width(130.dp).height(50.dp)
         )
 
-        Spacer(modifier = Modifier.height(64.dp))
+        // 3. Use weights for flexible vertical spacing
+        Spacer(modifier = Modifier.weight(1f))
 
         Text(
             text = "What's your Age ?",
@@ -97,10 +114,10 @@ fun AgeSelectionScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Centered circle displaying selected age
+        // Centered circle now uses the responsive size
         Box(
             modifier = Modifier
-                .size(circleSize)
+                .size(circleSize) // ✨ Using responsive size
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
@@ -123,11 +140,7 @@ fun AgeSelectionScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
-
-        val screenWidthPx = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
-        val centerOffsetPx = (screenWidthPx / 2 - itemWidthPx / 2).roundToInt()
-        val contentPaddingDp = with(LocalDensity.current) { (screenWidthPx / 2 - itemWidthPx / 2).toDp() }
+        Spacer(modifier = Modifier.weight(1f))
 
         LazyRow(
             state = listState,
@@ -141,16 +154,11 @@ fun AgeSelectionScreen(
             }
         }
 
-        LaunchedEffect(Unit) {
-            listState.scrollToItem(0, centerOffsetPx) // 10 is now centered initially
-        }
-
         Spacer(modifier = Modifier.weight(1f))
 
         HorizontalWaveButton(
             onClick = {
                 authViewModel.age = selectedAge
-                Log.d("She&Soul", "Age selected: $selectedAge ${authViewModel.age}")
                 onContinueClicked(selectedAge)
             },
             text = "Continue >",
@@ -159,6 +167,7 @@ fun AgeSelectionScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp) // Add padding at the bottom
                 .height(50.dp)
         )
     }

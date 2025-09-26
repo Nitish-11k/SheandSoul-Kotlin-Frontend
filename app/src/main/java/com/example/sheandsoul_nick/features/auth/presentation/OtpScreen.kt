@@ -3,6 +3,12 @@ package com.example.sheandsoul_nick.features.auth.presentation
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,10 +27,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -234,6 +243,20 @@ fun OtpInputBox(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    // This creates the blinking effect
+    val infiniteTransition = rememberInfiniteTransition(label = "cursorTransition")
+    val cursorColor by infiniteTransition.animateColor(
+        initialValue = if (isFocused) Color(0xFF9092FF) else Color.Transparent,
+        targetValue = Color.Transparent,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cursorColor"
+    )
+
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
@@ -241,12 +264,17 @@ fun OtpInputBox(
             .size(48.dp)
             .border(
                 width = 1.dp,
-                color = if (value.isNotEmpty()) Color(0xFF9092FF) else Color.LightGray,
+                color = if (isFocused || value.isNotEmpty()) Color(0xFF9092FF) else Color.LightGray,
                 shape = RoundedCornerShape(8.dp)
-            ),
+            )
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+            },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+        // This is the blinking cursor
+        cursorBrush = SolidColor(cursorColor),
         decorationBox = {
-            Box(contentAlignment = Alignment.Center) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Text(
                     text = value,
                     fontSize = 20.sp,

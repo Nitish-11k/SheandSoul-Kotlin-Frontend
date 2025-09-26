@@ -33,7 +33,8 @@ fun NameScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 24.dp)
+            .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // This inner Column holds the content and uses 'weight' to push the button down.

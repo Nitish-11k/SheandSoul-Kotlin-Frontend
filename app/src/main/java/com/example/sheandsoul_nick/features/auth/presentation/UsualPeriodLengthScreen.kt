@@ -25,22 +25,30 @@ import androidx.compose.ui.unit.sp
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
 import com.example.sheandsoul_nick.ui.components.VerticalNumberPicker
+import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun UsualPeriodLengthScreen(
-    onContinueClicked:()->Unit,
+    onContinueClicked: () -> Unit,
     authViewModel: AuthViewModel
 ) {
-    val daysList = (1..7).toList() + listOf(null) // fake items on top & bottom
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 4) // default = 4 days
+    // ✅ FIX 1: Add two `null` items to the beginning and end of the list for padding.
+    // This creates the empty space needed for the first and last numbers to reach the center.
+    val daysList = listOf(null, null) + (1..7).toList() + listOf(null, null)
+
+    // ✅ FIX 2: Update the initial index to center the number '4' in the new, padded list.
+    // The list is [null, null, 1, 2, 3, 4, ...], so '4' is at index 5.
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 5)
 
     val selectedDay by remember {
         derivedStateOf {
             if (listState.layoutInfo.visibleItemsInfo.isNotEmpty()) {
-                val centerIndex = listState.firstVisibleItemIndex + listState.layoutInfo.visibleItemsInfo.size / 2
-                val value = daysList.getOrNull(centerIndex)
-                value ?: 4
+                val viewportCenter = (listState.layoutInfo.viewportStartOffset + listState.layoutInfo.viewportEndOffset) / 2
+                val centerItem = listState.layoutInfo.visibleItemsInfo.minByOrNull {
+                    abs((it.offset + it.size / 2) - viewportCenter)
+                }
+                centerItem?.index?.let { daysList.getOrNull(it) } ?: 4
             } else 4
         }
     }
@@ -48,7 +56,8 @@ fun UsualPeriodLengthScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .navigationBarsPadding(), // ✅ FIX 3: Added for better edge-to-edge display
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(24.dp))
@@ -106,6 +115,7 @@ fun UsualPeriodLengthScreen(
                         textAlign = TextAlign.Center
                     )
                 } else {
+                    // This creates the visual empty space for our null padding items
                     Spacer(modifier = Modifier.height(60.dp))
                 }
             }

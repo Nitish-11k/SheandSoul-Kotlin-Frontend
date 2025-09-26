@@ -1,11 +1,14 @@
 package com.example.sheandsoul_nick.features.auth.presentation
+
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -18,23 +21,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
-import com.example.sheandsoul_nick.ui.components.VerticalNumberPicker
 import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun UsualCycleLengthScreen(
-    onContinueClicked:()->Unit,
+    onContinueClicked: () -> Unit,
     authViewModel: AuthViewModel
 ) {
-    val daysList = (10..30).toList()
-    val defaultCycleLength = 28
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = daysList.indexOf(defaultCycleLength).coerceAtLeast(0))
+    // --- CONFIGURATION & DATA ---
+    val itemHeight: Dp = 60.dp
+    val pickerHeight: Dp = 300.dp
+    val verticalPadding = (pickerHeight - itemHeight) / 2 // ✅ Key for full scrolling range
 
+    // ✅ Changed the range from 10..30 to 1..35
+    val daysList = (1..35).toList()
+    val defaultCycleLength = 28
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = daysList.indexOf(defaultCycleLength).coerceAtLeast(0)
+    )
+
+    // Your derivedStateOf logic is already excellent and robust, no changes needed.
     val selectedDay by remember {
         derivedStateOf {
             val visibleItemsInfo = listState.layoutInfo.visibleItemsInfo
@@ -51,7 +63,8 @@ fun UsualCycleLengthScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(24.dp))
@@ -76,14 +89,15 @@ fun UsualCycleLengthScreen(
 
         Box(
             modifier = Modifier
-                .height(300.dp)
+                .height(pickerHeight)
                 .width(150.dp),
             contentAlignment = Alignment.Center
         ) {
+            // Central highlight box
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp)
+                    .height(itemHeight)
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color(0xFFBBBDFF).copy(alpha = 0.1f))
                     .border(
@@ -93,19 +107,31 @@ fun UsualCycleLengthScreen(
                     )
             )
 
-            VerticalNumberPicker(
-                listState = listState,
-                items = daysList,
-                itemHeight = 60.dp,
-                selectorHeight = 60.dp
-            ) { item, isSelected ->
-                Text(
-                    text = "$item days",
-                    fontSize = if (isSelected) 32.sp else 24.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
-                    textAlign = TextAlign.Center
-                )
+            // ✅ Replaced VerticalNumberPicker with a standard LazyColumn to apply the fix directly
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = verticalPadding),
+                flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+            ) {
+                items(daysList.size) { index ->
+                    val item = daysList[index]
+                    val isSelected = (item == selectedDay)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(itemHeight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "$item days",
+                            fontSize = if (isSelected) 32.sp else 24.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
         }
 
@@ -126,4 +152,3 @@ fun UsualCycleLengthScreen(
         )
     }
 }
-

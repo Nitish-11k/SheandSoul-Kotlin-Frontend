@@ -76,6 +76,7 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 24.dp)
+                    .navigationBarsPadding()
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

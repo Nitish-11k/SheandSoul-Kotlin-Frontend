@@ -48,6 +48,7 @@ fun PrivacyScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .navigationBarsPadding()
             .background(Color.White)
     ) {
         Image(

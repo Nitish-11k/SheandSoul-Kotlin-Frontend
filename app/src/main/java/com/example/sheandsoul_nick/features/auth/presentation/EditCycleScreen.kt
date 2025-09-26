@@ -66,7 +66,7 @@ fun EditCycleDetailsScreen(
     }
 
     // Cycle Length Picker (1–28 with null padding)
-    val cycleLengthList: List<Int?> = listOf(null) + (1..28).toList() + listOf(null)
+    val cycleLengthList: List<Int?> = listOf(null) + (1..35).toList() + listOf(null)
     val initialCycleIndex = authViewModel.cycle_length.coerceIn(1, 28)
     val cycleListState = rememberLazyListState(initialFirstVisibleItemIndex = initialCycleIndex)
 
@@ -300,7 +300,7 @@ private fun NumberPickerBox(
             listState = listState,
             items = items,
             itemHeight = 50.dp,
-            selectorHeight = 50.dp
+//            selectorHeight = 50.dp
         ) { item, isSelected ->
             if (item != null) {
                 Text(

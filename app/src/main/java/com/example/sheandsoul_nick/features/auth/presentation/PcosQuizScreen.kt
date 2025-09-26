@@ -90,7 +90,8 @@ fun PcosQuizScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .navigationBarsPadding(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 val progress by animateFloatAsState(

@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -241,6 +242,8 @@ fun PeriodTrackerCard(
     nextPeriodDateString: String,
     onEditCycleClick: () -> Unit
 ) {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val circleDiameter = screenWidth * 0.55f
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -249,13 +252,13 @@ fun PeriodTrackerCard(
     ) {
         Column(
             modifier = Modifier
-                .padding(24.dp)
+                .padding(16.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(180.dp)
+                modifier = Modifier.size(circleDiameter)
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     drawArc(

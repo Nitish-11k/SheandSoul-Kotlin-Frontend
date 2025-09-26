@@ -72,7 +72,8 @@ fun LastPeriodDateScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(24.dp))
@@ -95,6 +96,13 @@ fun LastPeriodDateScreen(
         )
 
         Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Tap the start date, then each following day until the end date.",
+            fontSize = 14.sp,
+            color = Color.Gray,
+            textAlign = TextAlign.Center
+        )
 
         Box(
             modifier = Modifier

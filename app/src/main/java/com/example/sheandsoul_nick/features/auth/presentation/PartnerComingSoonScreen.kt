@@ -24,6 +24,7 @@ fun PartnerComingSoonScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .navigationBarsPadding()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -42,8 +43,8 @@ fun PartnerComingSoonScreen(
         Image(
             painter = painterResource(id = R.drawable.ic_partner_avtar),
             contentDescription = "Coming Soon Illustration",
-            modifier = Modifier.width(250.dp)
-                .height(450.dp)
+            modifier = Modifier.fillMaxWidth(0.8f)
+                .fillMaxHeight(0.6f)
                 .alpha(0.4f)
         )
 
