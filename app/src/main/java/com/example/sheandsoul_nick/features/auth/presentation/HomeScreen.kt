@@ -28,7 +28,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -36,8 +35,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,11 +49,7 @@ import com.example.sheandsoul_nick.data.remote.ArticleDto
 import com.example.sheandsoul_nick.features.articles.ArticleViewModel
 import com.example.sheandsoul_nick.features.articles.ArticleViewModelFactory
 import com.example.sheandsoul_nick.features.articles.DataState
-import com.example.sheandsoul_nick.features.auth.presentation.AssessmentUiState
-import com.example.sheandsoul_nick.features.auth.presentation.AuthViewModel
-import com.example.sheandsoul_nick.features.auth.presentation.MenstrualResult
-import com.example.sheandsoul_nick.features.auth.presentation.PcosDashboardViewModel
-import com.example.sheandsoul_nick.features.auth.presentation.PcosDashboardViewModelFactory
+import com.example.sheandsoul_nick.features.auth.presentation.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -123,7 +116,9 @@ fun HomeScreen(
             item {
                 when (val result = menstrualResult) {
                     is MenstrualResult.Loading -> {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().height(280.dp)) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier
+                            .fillMaxWidth()
+                            .height(280.dp)) {
                             CircularProgressIndicator()
                         }
                     }
@@ -174,17 +169,15 @@ fun HomeScreen(
                 PcosAssessmentCard(
                     onStartAssessmentClick = onNavigateToPcosQuiz,
                     onViewDashboardClick = {
+                        // ✅ FIX: This logic now correctly navigates to the dashboard in all cases.
+                        // The dashboard screen itself will then decide what to show.
                         when (pcosState) {
-                            is AssessmentUiState.Success -> {
-                                // User has data, go to the dashboard
+                            is AssessmentUiState.Success,
+                            is AssessmentUiState.NoAssessment,
+                            is AssessmentUiState.Error -> {
                                 onNavigateToPcosDashboard()
                             }
-                            is AssessmentUiState.NoAssessment, is AssessmentUiState.Error -> {
-                                // No data or error, send them straight to the quiz
-                                onNavigateToPcosQuiz()
-                            }
                             is AssessmentUiState.Loading -> {
-                                // Optional: Show a toast to let the user know it's working
                                 Toast.makeText(context, "Checking assessment status...", Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -203,6 +196,7 @@ fun HomeScreen(
     }
 }
 
+// ... the rest of your HomeScreen.kt file remains unchanged
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeTopAppBar(
@@ -316,7 +310,8 @@ fun FertilityCard(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .shadow(3.dp, shape = RoundedCornerShape(16.dp))
     ) {
         Row(
@@ -343,19 +338,16 @@ fun FertilityCard(
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
-            // ✅ FIXED: Replaced the Canvas with a simple Box for the circular gradient
-            // Using a Box with a background gradient is simpler and more Compose-native than using a Canvas.
             Box(
                 modifier = Modifier
                     .size(80.dp)
             ) {
-                // Use a Canvas only if you need complex drawing.
-                // For a simple icon, just use an Icon composable.
                 Icon(
                     painter = painterResource(id = R.drawable.ic_fertility_icon), // Replace with your actual icon
                     contentDescription = "Fertility Indicator",
                     tint = Color(0xFF9092FF),
-                    modifier = Modifier.size(80.dp)
+                    modifier = Modifier
+                        .size(80.dp)
                         .padding(2.dp)
                 )
             }
@@ -443,14 +435,17 @@ fun PcosAssessmentCard(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Button(
                     onClick = onStartAssessmentClick,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0FF)),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
                         .shadow(4.dp, shape = RoundedCornerShape(12.dp))
                 ) {
                     Text("Start/Re-take Assessment", color = Color(0xFF9092FF))
@@ -459,8 +454,9 @@ fun PcosAssessmentCard(
                     onClick = onViewDashboardClick,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0FF)),
-                    modifier = Modifier.weight(1f)
-                   .shadow(4.dp, shape = RoundedCornerShape(12.dp))
+                    modifier = Modifier
+                        .weight(1f)
+                        .shadow(4.dp, shape = RoundedCornerShape(12.dp))
                 ) {
                     Text("View Dashboard", color = Color(0xFF9092FF))
                 }
@@ -499,7 +495,9 @@ fun CuratedForYouSection(
 
         when (articlesState) {
             is DataState.Loading -> {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
@@ -522,7 +520,9 @@ fun CuratedForYouSection(
                 Text(articlesState.message, color = MaterialTheme.colorScheme.error)
             }
             null -> {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }

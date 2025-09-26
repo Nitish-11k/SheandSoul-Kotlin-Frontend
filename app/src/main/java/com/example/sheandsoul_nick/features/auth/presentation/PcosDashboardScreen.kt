@@ -50,6 +50,10 @@ fun PcosDashboardScreen(
     val state by viewModel.assessmentState
     val context = LocalContext.current
 
+    LaunchedEffect(Unit) {
+        viewModel.checkAssessmentStatus()
+    }
+
     PcosDashboardScreenContent(
         username = authViewModel.name,
         assessmentState = state,

@@ -29,7 +29,7 @@ class PcosDashboardViewModel(authViewModel: AuthViewModel) : ViewModel() {
     }
 
     // 👇 REWRITE THIS FUNCTION
-    private fun checkAssessmentStatus() {
+    fun checkAssessmentStatus() {
         assessmentState.value = AssessmentUiState.Loading
         viewModelScope.launch {
             try {
