@@ -2,6 +2,8 @@ package com.example.sheandsoul_nick.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -58,6 +60,12 @@ fun <T> VerticalNumberPicker(
     content: @Composable (T, Boolean) -> Unit
 ) {
 
+    val noFling = object : FlingBehavior {
+        override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
+            return 0f // Returning 0f effectively cancels the fling
+        }
+    }
+
     // Selected index from center
     val selectedIndexState = remember(listState) {
         derivedStateOf {
@@ -102,7 +110,8 @@ fun <T> VerticalNumberPicker(
         state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = (selectorHeight - itemHeight) / 2),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        flingBehavior = noFling
     ) {
         items(items.size) { index ->
             val item = items[index]

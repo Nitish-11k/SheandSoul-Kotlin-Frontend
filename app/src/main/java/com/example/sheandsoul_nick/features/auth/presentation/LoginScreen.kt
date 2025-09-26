@@ -64,34 +64,31 @@ fun LoginScreen(
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        Log.d("GoogleSignIn", "Result received. Result Code: ${result.resultCode}") // 👈 ADD LOG
-
+        Log.d("GoogleSignIn", "Result received. Result Code: ${result.resultCode}")
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)!!
                 val idToken = account.idToken
-
                 if (idToken != null) {
-                    Log.d("GoogleSignIn", "SUCCESS! Got idToken.") // 👈 ADD LOG
+                    Log.d("GoogleSignIn", "SUCCESS! Got idToken.")
                     authViewModel.signInWithGoogle(idToken)
                 } else {
-                    Log.e("GoogleSignIn", "ERROR: idToken is null!") // 👈 ADD LOG
+                    Log.e("GoogleSignIn", "ERROR: idToken is null!")
                     isLoading = false
                 }
-
             } catch (e: ApiException) {
-                // 👇 THIS IS THE MOST IMPORTANT LOG!
                 Log.e("GoogleSignIn", "ApiException: statusCode=${e.statusCode} message=${e.message}")
                 isLoading = false
                 Toast.makeText(context, "Google Sign-In failed. Code: ${e.statusCode}", Toast.LENGTH_LONG).show()
             }
         } else {
-            Log.w("GoogleSignIn", "Result was not OK. User might have cancelled.") // 👈 ADD LOG
+            Log.w("GoogleSignIn", "Result was not OK. User might have cancelled.")
             isLoading = false
         }
     }
 
+    // ✅ FIX: This LaunchedEffect now correctly handles both Success and SuccessGoogle.
     LaunchedEffect(authResult) {
         when (val result = authResult) {
             is AuthResult.Success -> {
@@ -123,27 +120,20 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(28.dp))
-
             Image(
                 painter = painterResource(id = R.drawable.ic_sheandsoul_text),
                 contentDescription = "Logo",
                 modifier = Modifier
                     .width(138.dp)
                     .height(50.dp)
-                    .padding(8.dp)
+                    .padding(bottom = 8.dp)
             )
-
             Spacer(modifier = Modifier.height(80.dp))
-
             Text("Login", fontWeight = FontWeight.Bold, fontSize = 24.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
             Text("Welcome back to app", fontSize = 14.sp, color = Color.Gray, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
-
             Spacer(modifier = Modifier.height(24.dp))
-
             OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email Address") }, singleLine = true, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth())
-
             Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -161,13 +151,10 @@ fun LoginScreen(
                     }
                 }
             )
-
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = "Forgot Password ?", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.align(Alignment.End)
                 .clickable { onForgotPasswordClicked() })
-
             Spacer(modifier = Modifier.height(24.dp))
-
             HorizontalWaveButton(
                 onClick = { authViewModel.loginUser(email, password) },
                 text = "Login",
@@ -177,13 +164,7 @@ fun LoginScreen(
                 cornerRadius = 12.dp,
                 useVerticalGradient = true
             )
-
-            // ==================================================================
-            // ## START OF THE FIX ##
-            // The following sections were moved back inside the main Column
-            // ==================================================================
             Spacer(modifier = Modifier.height(30.dp))
-
             SocialSignInButton(
                 text = "Continue with Google",
                 iconResId = R.drawable.ic_google,
@@ -199,11 +180,7 @@ fun LoginScreen(
                     }
                 }
             )
-
-
-            // Use a Spacer with weight to push the final text to the bottom
             Spacer(modifier = Modifier.height(22.dp))
-
             val annotatedString = buildAnnotatedString {
                 withStyle(style = SpanStyle(color = Color.Gray, fontSize = 14.sp)) {
                     append("Not Registered Yet ? ")
@@ -220,7 +197,6 @@ fun LoginScreen(
                 }
                 pop()
             }
-
             ClickableText(
                 text = annotatedString,
                 onClick = { offset ->
@@ -230,9 +206,6 @@ fun LoginScreen(
                         }
                 }
             )
-            // ==================================================================
-            // ## END OF THE FIX ##
-            // ==================================================================
         }
 
         if (isLoading) {
@@ -247,10 +220,4 @@ fun LoginScreen(
             }
         }
     }
-}
-@RequiresApi(Build.VERSION_CODES.O)
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen()
 }

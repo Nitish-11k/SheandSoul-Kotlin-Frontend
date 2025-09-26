@@ -5,7 +5,8 @@ import com.google.gson.annotations.SerializedName
 // Data to SEND when signing up
 data class SignUpRequest(
     val email: String,
-    val password: String
+    val password: String,
+    val deviceToken: String?
 )
 
 // Data to SEND when logging in

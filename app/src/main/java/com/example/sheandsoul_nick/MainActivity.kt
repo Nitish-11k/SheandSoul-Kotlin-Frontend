@@ -30,7 +30,6 @@ import com.example.sheandsoul_nick.ui.theme.SheAndSoulNickTheme
 
 class MainActivity : ComponentActivity() {
 
-    // Your notification permission logic is correct and remains here
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -55,88 +54,69 @@ class MainActivity : ComponentActivity() {
         askNotificationPermission()
         enableEdgeToEdge()
         setContent {
-            val context = LocalContext.current
-
             SheAndSoulNickTheme {
                 val authViewModel: AuthViewModel = viewModel()
-
-                // ✅ 1. Get the session state from the ViewModel
                 val isSessionChecked = authViewModel.isSessionChecked
-                val isLoggedIn = authViewModel.token != null
 
-                // ✅ 2. Show a splash screen while checking for a saved token
                 if (!isSessionChecked) {
                     SplashScreen()
                 } else {
-                    // ✅ 3. Once checked, determine the correct starting screen
-                    val startDestination = if (isLoggedIn) Screen.Home.route else Screen.Privacy.route
                     val navController = rememberNavController()
-                    var userEmail by remember { mutableStateOf("") }
+                    val isLoggedIn = authViewModel.token != null
+                    val isProfileComplete by authViewModel.isProfileComplete
 
-                    // ✅ 4. Use the dynamic startDestination for the NavHost
+                    // ✅ FIX: The start destination now correctly reflects the full user state.
+                    val startDestination = when {
+                        isLoggedIn && isProfileComplete == true -> Screen.Home.route
+                        isLoggedIn && isProfileComplete == false -> Screen.Name.route
+                        else -> Screen.Privacy.route
+                    }
+
+                    // ✅ FIX: Create a single, reusable function to handle navigation after any successful authentication.
+                    val handleSuccessfulAuth: (Boolean) -> Unit = { isNewUser ->
+                        val destination = if (authViewModel.isProfileComplete.value == true) {
+                            Screen.Home.route
+                        } else {
+                            // If Google sign-in reports a new user, always start onboarding.
+                            // Otherwise, for existing users, respect the isProfileComplete flag.
+                            Screen.Name.route
+                        }
+                        navController.navigate(destination) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        }
+                    }
+
                     NavHost(navController = navController, startDestination = startDestination) {
-
-                        // ALL YOUR EXISTING NAVIGATION ROUTES REMAIN THE SAME
                         composable(Screen.Privacy.route) {
-                            PrivacyScreen(
-                                onAgree = {
-                                    navController.navigate(Screen.Login.route) {
-                                        popUpTo(Screen.Privacy.route) { inclusive = true }
-                                    }
+                            PrivacyScreen(onAgree = {
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(Screen.Privacy.route) { inclusive = true }
                                 }
-                            )
+                            })
                         }
 
                         composable(Screen.Login.route) {
                             LoginScreen(
                                 authViewModel = authViewModel,
                                 onNavigateToSignup = { navController.navigate(Screen.SignUp.route) },
-                                onLoginSuccess = {
-                                    navController.navigate(Screen.Home.route) {
-                                        // Clear the entire back stack up to the graph's start destination
-                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                    }
-                                },
-                                onForgotPasswordClicked = {
-                                    navController.navigate(Screen.ForgotPassword.route)
-                                },
-                                onGoogleSignInSuccess = { isNewUser ->
-                                    // If it's a new user, go to Name screen, otherwise go to Home
-                                    val destination = if (isNewUser) Screen.Name.route else Screen.Home.route
-                                    navController.navigate(destination) {
-                                        // Clear the auth flow from the back stack
-                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                    }
-
-                                }
+                                onLoginSuccess = { handleSuccessfulAuth(false) }, // Not a new user
+                                onGoogleSignInSuccess = { isNew -> handleSuccessfulAuth(isNew) },
+                                onForgotPasswordClicked = { navController.navigate(Screen.ForgotPassword.route) }
                             )
                         }
-
-                        // ... PASTE ALL OF YOUR OTHER composable() routes here, exactly as they were ...
-                        // (I've included them below for completeness)
 
                         composable(Screen.SignUp.route) {
                             SignUpScreen(
                                 authViewModel = authViewModel,
                                 onNavigateToLogin = { navController.popBackStack() },
-                                onSignUpSuccess = { email ->
-                                    userEmail = email
-                                    navController.navigate(Screen.Otp.route)
-                                },
-                                onGoogleSignInSuccess = { isNewUser ->
-                                    val destination = if (isNewUser) Screen.Name.route else Screen.Home.route
-                                    navController.navigate(destination) {
-                                        popUpTo(Screen.SignUp.route) { inclusive = true }
-                                    }
-                                }
+                                onSignUpSuccess = { navController.navigate(Screen.Otp.route) },
+                                onGoogleSignInSuccess = { isNew -> handleSuccessfulAuth(isNew) }
                             )
                         }
 
                         composable(Screen.ForgotPassword.route) {
                             ForgotPasswordScreen(
-                                onOtpSent = { email ->
-                                    navController.navigate(Screen.ResetPassword.createRoute(email))
-                                },
+                                onOtpSent = { email -> navController.navigate(Screen.ResetPassword.createRoute(email)) },
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }
@@ -160,18 +140,14 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Otp.route) {
                             OtpScreen(
                                 authViewModel = authViewModel,
-                                onVerificationSuccess = {
-                                    navController.navigate(Screen.Name.route)
-                                }
+                                onVerificationSuccess = { navController.navigate(Screen.Name.route) }
                             )
                         }
 
                         composable(Screen.Name.route) {
                             NameScreen(
                                 authViewModel = authViewModel,
-                                onContinueClicked = {
-                                    navController.navigate(Screen.Nickname.route)
-                                }
+                                onContinueClicked = { navController.navigate(Screen.Nickname.route) }
                             )
                         }
 
@@ -199,9 +175,8 @@ class MainActivity : ComponentActivity() {
                             PartnerComingSoonScreen(onGoBack = { navController.popBackStack() })
                         }
                         composable(Screen.AgeSelection.route) {
-                            AgeSelectionScreen(onContinueClicked = {age->
-                                navController.navigate(Screen.HeightSelection.route)
-                            },
+                            AgeSelectionScreen(
+                                onContinueClicked = { age -> navController.navigate(Screen.HeightSelection.route) },
                                 authViewModel = authViewModel
                             )
                         }
@@ -209,34 +184,27 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.HeightSelection.route) {
                             HeightSelectionScreen(
                                 authViewModel = authViewModel,
-                                onContinueClicked = { _, _ ->
-                                    navController.navigate(Screen.WeightSelection.route)
-                                })
+                                onContinueClicked = { _, _ -> navController.navigate(Screen.WeightSelection.route) }
+                            )
                         }
 
                         composable(Screen.WeightSelection.route) {
                             WeightSelectionScreen(
                                 authViewModel = authViewModel,
-                                onContinueClicked = {
-                                    navController.navigate(Screen.UsualPeriodLengthSelection.route)
-                                }
+                                onContinueClicked = { navController.navigate(Screen.UsualPeriodLengthSelection.route) }
                             )
                         }
 
                         composable(Screen.UsualPeriodLengthSelection.route) {
                             UsualPeriodLengthScreen(
                                 authViewModel = authViewModel,
-                                onContinueClicked = {
-                                    navController.navigate(Screen.UsualCycleLengthSelection.route)
-                                }
+                                onContinueClicked = { navController.navigate(Screen.UsualCycleLengthSelection.route) }
                             )
                         }
 
                         composable(Screen.UsualCycleLengthSelection.route){
                             UsualCycleLengthScreen(
-                                onContinueClicked = {
-                                    navController.navigate(Screen.LastPeriodDateSelection.route)
-                                },
+                                onContinueClicked = { navController.navigate(Screen.LastPeriodDateSelection.route) },
                                 authViewModel = authViewModel
                             )
                         }
@@ -246,7 +214,6 @@ class MainActivity : ComponentActivity() {
                                 authViewModel = authViewModel,
                                 onFinish = {
                                     navController.navigate(Screen.Home.route) {
-                                        // Clear the whole auth flow from the back stack
                                         popUpTo(Screen.Privacy.route) { inclusive = true }
                                     }
                                 }
@@ -256,32 +223,15 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Home.route) {
                             HomeScreen(
                                 authViewModel = authViewModel,
-                                onArticleClicked = { articleId ->
-                                    navController.navigate(Screen.ArticleDetail.createRoute(articleId))
-                                },
+                                onArticleClicked = { articleId -> navController.navigate(Screen.ArticleDetail.createRoute(articleId)) },
                                 onNavigateToArticles = { navController.navigate(Screen.ArticleScreen.route) },
-                                onNavigateToCommunity = {
-                                    navController.navigate(Screen.Community.route)
-                                },
-                                onNavigateToProfile = {
-                                    navController.navigate(Screen.Music.route)
-                                },
-                                onNavigateToPartner = {
-                                    navController.navigate(Screen.PartnerRole.route)
-                                },
-                                onProfileClick = {
-                                    navController.navigate(Screen.Profile.route)
-                                    Toast.makeText(context, "Profile Clicked!", Toast.LENGTH_SHORT)
-                                        .show()
-
-                                },
-                                onNavigateToPcosQuiz = {
-                                    navController.navigate(Screen.PcosQuiz.route)
-                                },
+                                onNavigateToCommunity = { navController.navigate(Screen.Community.route) },
+                                onNavigateToProfile = { navController.navigate(Screen.Music.route) },
+                                onNavigateToPartner = { navController.navigate(Screen.PartnerRole.route) },
+                                onProfileClick = { navController.navigate(Screen.Profile.route) },
+                                onNavigateToPcosQuiz = { navController.navigate(Screen.PcosQuiz.route) },
                                 onNavigateToPcosDashboard = { navController.navigate(Screen.PcosDashboard.route) },
-                                onNavigateToEditCycle = {
-                                    navController.navigate(Screen.EditCycle.route)
-                                }
+                                onNavigateToEditCycle = { navController.navigate(Screen.EditCycle.route) }
                             )
                         }
 
@@ -290,12 +240,8 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToHome = { navController.navigate(Screen.Home.route) },
                                 onNavigateToCommunity = {navController.navigate(Screen.Community.route)},
                                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
-                                onArticleClicked = { articleId: Long ->
-                                    navController.navigate(Screen.ArticleDetail.createRoute(articleId))
-                                },
-                                onNavigateToMusic = {
-                                    navController.navigate(Screen.Music.route)
-                                },
+                                onArticleClicked = { articleId: Long -> navController.navigate(Screen.ArticleDetail.createRoute(articleId)) },
+                                onNavigateToMusic = { navController.navigate(Screen.Music.route) },
                                 authViewModel = authViewModel
                             )
                         }
@@ -303,9 +249,7 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.EditCycle.route) {
                             EditCycleDetailsScreen(
                                 authViewModel = authViewModel,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                }
+                                onNavigateBack = { navController.popBackStack() }
                             )
                         }
                         composable("music") {
@@ -332,15 +276,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Screen.Community.route){
                             CommunityComingSoonScreen(
-                                onNavigateToHome = {
-                                    navController.navigate(Screen.Home.route)
-                                },
-                                onNavigateToMusic = {
-                                    navController.navigate(Screen.Music.route)
-                                },
-                                onNavigateToArticles = {
-                                    navController.navigate(Screen.ArticleScreen.route)
-                                },
+                                onNavigateToHome = { navController.navigate(Screen.Home.route) },
+                                onNavigateToMusic = { navController.navigate(Screen.Music.route) },
+                                onNavigateToArticles = { navController.navigate(Screen.ArticleScreen.route) },
                                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
                             )
                         }
@@ -348,7 +286,6 @@ class MainActivity : ComponentActivity() {
                             PcosQuizScreen(
                                 authViewModel = authViewModel,
                                 onAssessmentComplete = { riskLevel ->
-                                    Toast.makeText(context, "Your Assessed Risk Level: $riskLevel", Toast.LENGTH_LONG).show()
                                     navController.navigate(Screen.PcosDashboard.route) {
                                         popUpTo(Screen.PcosQuiz.route) { inclusive = true }
                                     }
@@ -360,9 +297,7 @@ class MainActivity : ComponentActivity() {
                             PcosDashboardScreen(
                                 authViewModel = authViewModel,
                                 onNavigateBack = { navController.popBackStack() },
-                                onStartAssessment = {
-                                    navController.navigate(Screen.PcosQuiz.route)
-                                }
+                                onStartAssessment = { navController.navigate(Screen.PcosQuiz.route) }
                             )
                         }
                         composable(Screen.Profile.route) {
@@ -371,6 +306,7 @@ class MainActivity : ComponentActivity() {
                                 onNavigateBack = { navController.popBackStack() },
                                 onNavigateToLogin = {
                                     navController.navigate(Screen.Login.route)
+
                                 }
                             )
                         }
@@ -382,14 +318,13 @@ class MainActivity : ComponentActivity() {
 }
 
 
-// ✅ 5. Add this composable for your loading screen
 @Composable
 fun SplashScreen() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // You can replace this with your app's logo
         CircularProgressIndicator()
     }
 }
+

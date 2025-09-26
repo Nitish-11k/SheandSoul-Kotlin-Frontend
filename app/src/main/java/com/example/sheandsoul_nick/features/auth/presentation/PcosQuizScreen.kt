@@ -29,7 +29,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
 import kotlinx.coroutines.flow.collectLatest
 
-// ✅ FIX: Moved the factory to the top level of the file to resolve potential reference issues.
 class PcosQuizViewModelFactory(private val authViewModel: AuthViewModel) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(PcosQuizViewModel::class.java)) {
@@ -45,6 +44,7 @@ class PcosQuizViewModelFactory(private val authViewModel: AuthViewModel) : ViewM
 fun PcosQuizScreen(
     authViewModel: AuthViewModel,
     onNavigateBack: () -> Unit,
+    // ✅ FIX: The @Composable annotation has been removed from here. This is the fix.
     onAssessmentComplete: (String) -> Unit
 ) {
     val quizViewModel: PcosQuizViewModel = viewModel(factory = PcosQuizViewModelFactory(authViewModel))
@@ -61,6 +61,7 @@ fun PcosQuizScreen(
                 is QuizResult.Loading -> true
                 is QuizResult.Success -> {
                     Toast.makeText(context, "Assessment Complete!", Toast.LENGTH_SHORT).show()
+                    // This call is now valid because the function signature is correct.
                     onAssessmentComplete(result.response.riskLevel)
                     false
                 }
@@ -75,7 +76,7 @@ fun PcosQuizScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("PCOS Assessment") }, // ✅ FIX: Corrected typo
+                title = { Text("PCOS Assessment") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -90,8 +91,7 @@ fun PcosQuizScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .navigationBarsPadding(),
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 val progress by animateFloatAsState(
@@ -107,13 +107,12 @@ fun PcosQuizScreen(
                         .clip(RoundedCornerShape(4.dp))
                 )
 
-                // This scrollable column holds the question and answer, taking up the available space.
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center // This centers the content vertically.
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Text(
                         text = currentQuestion.text,
@@ -123,7 +122,6 @@ fun PcosQuizScreen(
                         modifier = Modifier.padding(vertical = 24.dp)
                     )
 
-                    // Answer Section
                     when (currentQuestion.answerType) {
                         AnswerType.NUMBER -> {
                             var textValue by remember(currentQuestionIndex) {
@@ -165,7 +163,6 @@ fun PcosQuizScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Navigation Buttons remain at the bottom
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -182,7 +179,7 @@ fun PcosQuizScreen(
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                     } else {
-                        Spacer(modifier = Modifier.weight(1f)) // Placeholder to keep "Next" button aligned
+                        Spacer(modifier = Modifier.weight(1f))
                     }
 
                     HorizontalWaveButton(
@@ -237,4 +234,3 @@ fun AnswerButton(
         Text(text)
     }
 }
-

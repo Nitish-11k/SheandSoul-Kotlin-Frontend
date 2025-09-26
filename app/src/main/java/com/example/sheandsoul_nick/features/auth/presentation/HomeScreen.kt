@@ -244,6 +244,7 @@ fun PeriodTrackerCard(
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val circleDiameter = screenWidth * 0.55f
+    val dynamicFontSize = (circleDiameter.value / 3.5f).sp
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -286,7 +287,7 @@ fun PeriodTrackerCard(
                     Text("For Next Period", fontSize = 14.sp, color = Color.Gray)
                     Text(
                         text = "$daysLeft",
-                        fontSize = 56.sp,
+                        fontSize = dynamicFontSize,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF9092FF)
                     )

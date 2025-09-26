@@ -6,19 +6,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -43,7 +31,7 @@ import kotlin.math.roundToInt
 // Define the units for height
 enum class HeightUnit { CM, FT }
 
-// Helper functions (cmToFtIn, ftInToCm, generateFtInList) remain the same...
+// Helper functions remain the same...
 fun cmToFtIn(cm: Int): Pair<Int, Int> {
     val totalInches = cm / 2.54
     val feet = (totalInches / 12).toInt()
@@ -74,15 +62,17 @@ fun HeightSelectionScreen(
 ) {
     var selectedUnit by remember { mutableStateOf(HeightUnit.CM) }
 
-    // ✅ FIX 1: Add two `null` items to the beginning and end of each list for padding.
-    val cmList = listOf(null, null) + (100..220).toList() + listOf(null, null)
+    // ✅ FIX 1: Add null padding items to the start and end of the lists.
+    // This allows the first and last real items to be centered.
+    val cmList = remember { listOf(null, null) + (100..220).toList() + listOf(null, null) }
     val ftInList = remember { listOf(null, null) + generateFtInList(2, 7) + listOf(null, null) }
 
-    // ✅ FIX 2: Update initial index to account for the new padding items.
-    // To center '120 cm', its new index is 22 (20 for 100-119, plus 2 for nulls).
-    val listStateCm = rememberLazyListState(initialFirstVisibleItemIndex = 22)
-    // To center '5ft 7in', find its new index in the padded list.
-    val listStateFt = rememberLazyListState(initialFirstVisibleItemIndex = ftInList.indexOf(5 to 7))
+    // Find the initial index in the new, padded list.
+    val initialCmIndex = cmList.indexOf(120)
+    val initialFtInIndex = ftInList.indexOf(5 to 7)
+
+    val listStateCm = rememberLazyListState(initialFirstVisibleItemIndex = initialCmIndex)
+    val listStateFt = rememberLazyListState(initialFirstVisibleItemIndex = initialFtInIndex)
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -90,14 +80,17 @@ fun HeightSelectionScreen(
         derivedStateOf {
             if (listStateCm.layoutInfo.visibleItemsInfo.isEmpty()) return@derivedStateOf 120
             val centerIndex = listStateCm.firstVisibleItemIndex + listStateCm.layoutInfo.visibleItemsInfo.size / 2
-            cmList.getOrNull(centerIndex) ?: 120
+            // Safely cast to Int, defaulting to 120 if it's a null padding item
+            (cmList.getOrNull(centerIndex) as? Int) ?: 120
         }
     }
     val selectedHeightFt by remember {
         derivedStateOf {
             if (listStateFt.layoutInfo.visibleItemsInfo.isEmpty()) return@derivedStateOf (5 to 7)
             val centerIndex = listStateFt.firstVisibleItemIndex + listStateFt.layoutInfo.visibleItemsInfo.size / 2
-            ftInList.getOrNull(centerIndex) ?: (5 to 7)
+            // Safely cast to Pair, defaulting if it's a null padding item
+            @Suppress("UNCHECKED_CAST")
+            (ftInList.getOrNull(centerIndex) as? Pair<Int, Int>) ?: (5 to 7)
         }
     }
 
@@ -145,7 +138,7 @@ fun HeightSelectionScreen(
                         selectedUnit = HeightUnit.CM
                         val newCm = ftInToCm(selectedHeightFt.first, selectedHeightFt.second)
                         val index = cmList.indexOf(newCm).coerceAtLeast(0)
-                        coroutineScope.launch { listStateCm.animateScrollToItem(index) }
+                        coroutineScope.launch { listStateCm.scrollToItem(index) }
                     }
                 },
                 modifier = Modifier.weight(1f)
@@ -158,7 +151,7 @@ fun HeightSelectionScreen(
                         selectedUnit = HeightUnit.FT
                         val newFtIn = cmToFtIn(selectedHeightCm)
                         val index = ftInList.indexOf(newFtIn).coerceAtLeast(0)
-                        coroutineScope.launch { listStateFt.animateScrollToItem(index) }
+                        coroutineScope.launch { listStateFt.scrollToItem(index) }
                     }
                 },
                 modifier = Modifier.weight(1f)
@@ -190,9 +183,9 @@ fun HeightSelectionScreen(
                 VerticalNumberPicker(
                     listState = listStateCm,
                     items = cmList,
-                    itemHeight = 60.dp,
-                    selectorHeight = 60.dp
+                    itemHeight = 60.dp
                 ) { item, isSelected ->
+                    // ✅ FIX 2: Handle the null padding items by showing an empty Spacer.
                     if (item != null) {
                         Text(
                             text = "$item",
@@ -209,12 +202,14 @@ fun HeightSelectionScreen(
                 VerticalNumberPicker(
                     listState = listStateFt,
                     items = ftInList,
-                    itemHeight = 60.dp,
-                    selectorHeight = 60.dp
+                    itemHeight = 60.dp
                 ) { item, isSelected ->
+                    // ✅ FIX 2: Handle the null padding items here as well.
                     if (item != null) {
+                        @Suppress("UNCHECKED_CAST")
+                        val currentItem = item as Pair<Int, Int>
                         Text(
-                            text = "${item.first}' ${item.second}\"",
+                            text = "${currentItem.first}' ${currentItem.second}\"",
                             fontSize = if (isSelected) 32.sp else 24.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             color = if (isSelected) Color(0xFF9092FF) else Color.Gray,

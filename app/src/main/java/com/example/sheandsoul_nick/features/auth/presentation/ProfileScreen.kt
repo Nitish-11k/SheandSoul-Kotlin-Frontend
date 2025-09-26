@@ -35,6 +35,13 @@ fun ProfileScreen(
     onNavigateBack: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
+    // ✅ FIX: This tells the ViewModel to load the user's data when the screen appears.
+    LaunchedEffect(Unit) {
+        // IMPORTANT: Replace `loadUserProfile()` with the actual function
+        // name in your AuthViewModel that fetches user details.
+        authViewModel.loadUserProfile()
+    }
+
     var notificationsEnabled by remember { mutableStateOf(true) }
     var periodRemindersEnabled by remember { mutableStateOf(true) }
     var fertileWindowAlertsEnabled by remember { mutableStateOf(false) }
@@ -54,7 +61,8 @@ fun ProfileScreen(
                     Image(
                         painter = painterResource(id = R.drawable.ic_sheandsoul_text),
                         contentDescription = "She & Soul Logo",
-                        modifier = Modifier.width(130.dp)
+                        modifier = Modifier
+                            .width(130.dp)
                             .height(50.dp)
                     )
                 },

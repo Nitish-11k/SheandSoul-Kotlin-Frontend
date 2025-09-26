@@ -47,38 +47,48 @@ fun EditCycleDetailsScreen(
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
 
-    // Period Length Picker (1–7 with null padding)
     val periodLengthList: List<Int?> = listOf(null) + (1..7).toList() + listOf(null)
     val initialPeriodIndex = authViewModel.period_length.coerceIn(1, 7)
-    val periodListState = rememberLazyListState(initialFirstVisibleItemIndex = initialPeriodIndex)
+    val periodListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = (initialPeriodIndex - 1).coerceAtLeast(0)
+    )
 
+    // ✅ FIX: Use a robust calculation to find the physically centered item.
     val selectedPeriodLength by remember {
         derivedStateOf {
-            val visibleItems = periodListState.layoutInfo.visibleItemsInfo
+            val layoutInfo = periodListState.layoutInfo
+            val visibleItems = layoutInfo.visibleItemsInfo
             if (visibleItems.isEmpty()) {
-                authViewModel.period_length.coerceIn(1, 7)
+                authViewModel.period_length
             } else {
-                val centerIndex =
-                    periodListState.firstVisibleItemIndex + visibleItems.size / 2
-                periodLengthList.getOrNull(centerIndex) ?: authViewModel.period_length
+                val viewportCenter = layoutInfo.viewportEndOffset / 2
+                val centerItem = visibleItems.minByOrNull {
+                    kotlin.math.abs((it.offset + it.size / 2) - viewportCenter)
+                }
+                centerItem?.index?.let { periodLengthList.getOrNull(it) } ?: authViewModel.period_length
             }
         }
     }
 
-    // Cycle Length Picker (1–28 with null padding)
     val cycleLengthList: List<Int?> = listOf(null) + (1..35).toList() + listOf(null)
-    val initialCycleIndex = authViewModel.cycle_length.coerceIn(1, 28)
-    val cycleListState = rememberLazyListState(initialFirstVisibleItemIndex = initialCycleIndex)
+    val initialCycleIndex = authViewModel.cycle_length.coerceIn(1, 35)
+    val cycleListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = (initialCycleIndex - 1).coerceAtLeast(0)
+    )
 
+    // ✅ FIX: Apply the same robust calculation here.
     val selectedCycleLength by remember {
         derivedStateOf {
-            val visibleItems = cycleListState.layoutInfo.visibleItemsInfo
+            val layoutInfo = cycleListState.layoutInfo
+            val visibleItems = layoutInfo.visibleItemsInfo
             if (visibleItems.isEmpty()) {
-                authViewModel.cycle_length.coerceIn(1, 28)
+                authViewModel.cycle_length
             } else {
-                val centerIndex =
-                    cycleListState.firstVisibleItemIndex + visibleItems.size / 2
-                cycleLengthList.getOrNull(centerIndex) ?: authViewModel.cycle_length
+                val viewportCenter = layoutInfo.viewportEndOffset / 2
+                val centerItem = visibleItems.minByOrNull {
+                    kotlin.math.abs((it.offset + it.size / 2) - viewportCenter)
+                }
+                centerItem?.index?.let { cycleLengthList.getOrNull(it) } ?: authViewModel.cycle_length
             }
         }
     }
@@ -230,8 +240,8 @@ fun EditCycleDetailsScreen(
                         onClick = {
                             if (selectedDates.isNotEmpty()) {
                                 selectedDates.sort()
-                                authViewModel.period_length = selectedPeriodLength-1
-                                authViewModel.cycle_length = selectedCycleLength-1
+                                authViewModel.period_length = selectedPeriodLength ?: authViewModel.period_length
+                                authViewModel.cycle_length = selectedCycleLength ?: authViewModel.cycle_length
                                 authViewModel.last_period_start_date = selectedDates.first()
                                 authViewModel.last_period_end_date = selectedDates.last()
                                 Log.i("She&Soul",authViewModel.period_length.toString()+" "+authViewModel.cycle_length+" "+authViewModel.last_period_start_date+" "+authViewModel.last_period_end_date)
@@ -278,11 +288,10 @@ private fun NumberPickerBox(
 ) {
     Box(
         modifier = Modifier
-            .height(150.dp)
+            .height(150.dp) // Shows 3 items of 50.dp height
             .width(180.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Box for selector background
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -300,7 +309,6 @@ private fun NumberPickerBox(
             listState = listState,
             items = items,
             itemHeight = 50.dp,
-//            selectorHeight = 50.dp
         ) { item, isSelected ->
             if (item != null) {
                 Text(
@@ -310,11 +318,14 @@ private fun NumberPickerBox(
                     color = if (isSelected) Color(0xFF9092FF) else Color.Gray,
                     textAlign = TextAlign.Center
                 )
+            } else {
+                Spacer(modifier = Modifier.height(50.dp))
             }
         }
     }
 }
 
+// EditMonthNavigationHeader and EditCalendarGrid remain the same
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun EditMonthNavigationHeader(
