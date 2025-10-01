@@ -231,7 +231,8 @@ class MainActivity : ComponentActivity() {
                                 onProfileClick = { navController.navigate(Screen.Profile.route) },
                                 onNavigateToPcosQuiz = { navController.navigate(Screen.PcosQuiz.route) },
                                 onNavigateToPcosDashboard = { navController.navigate(Screen.PcosDashboard.route) },
-                                onNavigateToEditCycle = { navController.navigate(Screen.EditCycle.route) }
+                                onNavigateToEditCycle = { navController.navigate(Screen.EditCycle.route) },
+                                onNavigateToChatBot = {navController.navigate(Screen.Chat.route)}
                             )
                         }
 
@@ -308,6 +309,12 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Screen.Login.route)
 
                                 }
+                            )
+                        }
+                        composable(Screen.Chat.route) {
+                            ChatScreen(
+                                authViewModel = authViewModel,
+                                onNavigateBack = { navController.popBackStack() }
                             )
                         }
                     }

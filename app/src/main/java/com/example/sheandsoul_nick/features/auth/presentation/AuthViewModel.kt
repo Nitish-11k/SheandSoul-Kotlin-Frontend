@@ -107,36 +107,52 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
+    // Inside AuthViewModel class...
+
     private fun fetchProfileStatus(onComplete: () -> Unit) {
         viewModelScope.launch {
             try {
                 val response = apiService.getProfileStatus()
                 if (response.isSuccessful && response.body() != null) {
+                    // This part is fine.
                     val status = response.body()!!
                     _isProfileComplete.value = status.isProfileComplete ?: false
                     name = status.name ?: ""
                     nickname = status.nickname ?: ""
                     Log.d("AuthViewModel", "Profile status fetched. Is complete? ${_isProfileComplete.value}")
                 } else {
-                    Log.w("AuthViewModel", "Failed to get profile status for token. Logging out.")
-                    logout()
+                    if (response.code() == 401 || response.code() == 403) {
+                        Log.w("AuthViewModel", "Token is invalid (${response.code()}). Logging out.")
+                        logout()
+                    } else {
+                        Log.w(
+                            "AuthViewModel",
+                            "Failed to get profile status, but not logging out. Code: ${response.code()}"
+                        )
+                    }
                     _isProfileComplete.value = false
                 }
+            } catch (e: java.io.IOException) {
+                Log.w("AuthViewModel", "Network error fetching profile status. Assuming offline.", e)
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Error fetching profile status", e)
-                logout()
-                _isProfileComplete.value = false
+                Log.e("AuthViewModel", "Generic error fetching profile status. NOT logging out.", e)
             } finally {
                 onComplete()
             }
         }
     }
+    // Inside AuthViewModel class...
 
     private fun checkActiveSession() {
         viewModelScope.launch {
             val savedToken = sessionManager.authTokenFlow.firstOrNull()
             if (!savedToken.isNullOrBlank()) {
                 token = savedToken
+                // 👈 CHANGE: Assume profile is complete if a token exists.
+                // fetchProfileStatus will correct this if we're online and it's not.
+                // This prevents being sent to onboarding when offline.
+                _isProfileComplete.value = true
+
                 fetchProfileStatus {
                     isSessionChecked = true
                 }

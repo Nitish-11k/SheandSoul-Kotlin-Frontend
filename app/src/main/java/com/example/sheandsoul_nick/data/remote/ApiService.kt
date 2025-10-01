@@ -69,4 +69,6 @@ interface ApiService {
     suspend fun updateDeviceToken(@Body request: DeviceTokenRequest): Response<Unit> // The response body is not important
     @GET("api/profile/me")
     suspend fun getUserProfile(): Response<UserProfileDto>
+    @POST("api/chat")
+    suspend fun sendMessageToChat(@Body request: ChatRequest): Response<ChatResponse>
 }

@@ -3,7 +3,9 @@ package com.example.sheandsoul_nick.features.auth.presentation
 import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -40,6 +42,7 @@ class PcosDashboardViewModelFactory(private val authViewModel: AuthViewModel) : 
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PcosDashboardScreen(
     authViewModel: AuthViewModel,

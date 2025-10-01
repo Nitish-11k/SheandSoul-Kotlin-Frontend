@@ -67,6 +67,7 @@ fun HomeScreen(
     onArticleClicked: (Long) -> Unit,
     onNavigateToPcosDashboard: () -> Unit,
     onNavigateToEditCycle: () -> Unit,
+    onNavigateToChatBot: () -> Unit,
     authViewModel: AuthViewModel = viewModel()
 ) {
     val articleViewModel: ArticleViewModel = viewModel(factory = ArticleViewModelFactory(authViewModel))
@@ -92,7 +93,8 @@ fun HomeScreen(
         topBar = {
             HomeTopAppBar(
                 username = username,
-                onProfileClick = onProfileClick
+                onProfileClick = onProfileClick,
+                onChatClick = onNavigateToChatBot
             )
         },
         bottomBar = {
@@ -171,16 +173,17 @@ fun HomeScreen(
                     onViewDashboardClick = {
                         // ✅ FIX: This logic now correctly navigates to the dashboard in all cases.
                         // The dashboard screen itself will then decide what to show.
-                        when (pcosState) {
-                            is AssessmentUiState.Success,
-                            is AssessmentUiState.NoAssessment,
-                            is AssessmentUiState.Error -> {
-                                onNavigateToPcosDashboard()
-                            }
-                            is AssessmentUiState.Loading -> {
-                                Toast.makeText(context, "Checking assessment status...", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+//                        when (pcosState) {
+//                            is AssessmentUiState.Success,
+//                            is AssessmentUiState.NoAssessment,
+//                            is AssessmentUiState.Error -> {
+//                                onNavigateToPcosDashboard()
+//                            }
+//                            is AssessmentUiState.Loading -> {
+//                                Toast.makeText(context, "Checking assessment status...", Toast.LENGTH_SHORT).show()
+//                            }
+//                        }
+                        onNavigateToPcosDashboard()
                     }
                 )
             }
@@ -201,7 +204,8 @@ fun HomeScreen(
 @Composable
 fun HomeTopAppBar(
     username: String,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onChatClick: () -> Unit
 ) {
     CenterAlignedTopAppBar(
         title = {
@@ -222,6 +226,15 @@ fun HomeTopAppBar(
                     .clip(CircleShape)
                     .clickable { onProfileClick() }
             )
+        },
+        actions = {
+            IconButton(onClick = onChatClick) {
+                Icon(
+                    imageVector = Icons.Filled.Chat,
+                    contentDescription = "Open Chat",
+                    tint = Color(0xFF9092FF)
+                )
+            }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
             containerColor = Color.Transparent
@@ -581,6 +594,7 @@ fun HomeScreenPreview() {
         onNavigateToPcosDashboard = {},
         onArticleClicked = {},
         onNavigateToEditCycle = {},
+        onNavigateToChatBot = {}
     )
 }
 

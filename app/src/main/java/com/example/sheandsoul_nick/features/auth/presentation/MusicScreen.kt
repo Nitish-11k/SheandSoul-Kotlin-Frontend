@@ -395,7 +395,7 @@ fun MusicTrackItem(
                     .padding(end = 16.dp)
             ) {
                 Text(text = track.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text(text = track.producer, color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
+//                Text(text = track.producer, color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
             }
 
             AsyncImage(

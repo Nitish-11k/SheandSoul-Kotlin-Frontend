@@ -169,3 +169,6 @@ data class UserProfileDto(
     @SerializedName("cycleLength") val cycleLength: Int?,
     @SerializedName("lastPeriodStartDate") val lastPeriodStartDate: String? // Dates come as Strings
 )
+
+data class ChatRequest(val message: String)
+data class ChatResponse(val response: String)
