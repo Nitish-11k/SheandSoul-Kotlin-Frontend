@@ -232,7 +232,8 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToPcosQuiz = { navController.navigate(Screen.PcosQuiz.route) },
                                 onNavigateToPcosDashboard = { navController.navigate(Screen.PcosDashboard.route) },
                                 onNavigateToEditCycle = { navController.navigate(Screen.EditCycle.route) },
-                                onNavigateToChatBot = {navController.navigate(Screen.Chat.route)}
+                                onNavigateToChatBot = {navController.navigate(Screen.Chat.route)},
+                                onNavigateToNote = {}
                             )
                         }
 

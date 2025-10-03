@@ -3,6 +3,8 @@ package com.example.sheandsoul_nick.features.auth.presentation
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +29,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -141,7 +144,7 @@ fun ArticlesScreenContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticlesTopAppBar(onProfileClick: () -> Unit) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
         title = {
             Text(
                 "Articles",
@@ -158,10 +161,12 @@ fun ArticlesTopAppBar(onProfileClick: () -> Unit) {
                     .padding(start = 16.dp)
                     .size(40.dp)
                     .clip(CircleShape)
-                    .clickable{onProfileClick()}
+                    .background(Color(0xFFE0E0FF)) // A slightly lighter background color
+                    // ✨ CHANGE 2: Replaced the almost invisible shadow with a clean border
+                    .border(1.5.dp, Color(0xFFC39BE0), CircleShape)
+                    .clickable { onProfileClick() }
             )
         },
-        // ✅ The 'actions' block for the notification icon has been removed
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
     )
 }

@@ -3,10 +3,23 @@ package com.example.sheandsoul_nick.features.home
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -25,11 +38,14 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -53,6 +69,9 @@ import com.example.sheandsoul_nick.features.auth.presentation.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,22 +86,20 @@ fun HomeScreen(
     onArticleClicked: (Long) -> Unit,
     onNavigateToPcosDashboard: () -> Unit,
     onNavigateToEditCycle: () -> Unit,
+    onNavigateToNote: () -> Unit,
     onNavigateToChatBot: () -> Unit,
     authViewModel: AuthViewModel = viewModel()
 ) {
     val articleViewModel: ArticleViewModel = viewModel(factory = ArticleViewModelFactory(authViewModel))
     val articlesState by articleViewModel.categories.observeAsState()
     val menstrualResult by authViewModel.nextMenstrualResult.observeAsState()
-    val pcosDashboardViewModel: PcosDashboardViewModel = viewModel(factory = PcosDashboardViewModelFactory(
-        authViewModel
-    )
-    )
+    val pcosDashboardViewModel: PcosDashboardViewModel = viewModel(factory = PcosDashboardViewModelFactory(authViewModel))
     val pcosState by pcosDashboardViewModel.assessmentState
     val context = LocalContext.current
 
 
     LaunchedEffect(key1 = authViewModel.token) {
-        if(authViewModel.token != null) {
+        if (authViewModel.token != null) {
             articleViewModel.loadArticlesIfTokenAvailable()
             authViewModel.getNextMenstrualDetails()
         }
@@ -94,7 +111,7 @@ fun HomeScreen(
             HomeTopAppBar(
                 username = username,
                 onProfileClick = onProfileClick,
-                onChatClick = onNavigateToChatBot
+                onNavigateToNote = onNavigateToNote
             )
         },
         bottomBar = {
@@ -104,6 +121,106 @@ fun HomeScreen(
                 onNavigateToProfile = onNavigateToProfile
             )
         },
+        floatingActionButton = {
+            // --- ANIMATION STATES ---
+            val infiniteTransition = rememberInfiniteTransition(label = "border_rotation")
+            val angle by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "angle"
+            )
+
+            val interactionSource = remember { MutableInteractionSource() }
+            val isPressed by interactionSource.collectIsPressedAsState()
+            val pressedScale by animateFloatAsState(
+                targetValue = if (isPressed) 0.9f else 1f,
+                animationSpec = tween(durationMillis = 100),
+                label = "press_scale"
+            )
+
+            val textAlpha = remember { Animatable(0f) }
+            val textScale = remember { Animatable(0f) }
+
+            // ✨ FIX 1: Correctly structured the animation coroutines
+            LaunchedEffect(Unit) {
+                delay(1000)
+                coroutineScope { // Use coroutineScope to launch animations concurrently
+                    launch {
+                        textAlpha.animateTo(1f, tween(300))
+                    }
+                    launch {
+                        textScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+                    }
+                }
+                delay(1500)
+                coroutineScope {
+                    launch {
+                        textAlpha.animateTo(0f, tween(500))
+                    }
+                    launch {
+                        textScale.animateTo(1.2f, tween(500))
+                    }
+                }
+            }
+
+            // --- UI STRUCTURE ---
+            Box(contentAlignment = Alignment.Center) {
+                FloatingActionButton(
+                    onClick = { onNavigateToChatBot() },
+                    shape = CircleShape,
+                    containerColor = Color(0xFF9092FF),
+                    interactionSource = interactionSource,
+                    modifier = Modifier
+                        .graphicsLayer {
+                            scaleX = pressedScale
+                            scaleY = pressedScale
+                        }
+                        .drawWithContent {
+                            drawContent()
+                            rotate(angle) {
+                                drawCircle(
+                                    brush = Brush.sweepGradient(
+                                        0.0f to Color.Transparent,
+                                        0.2f to Color.Transparent,
+                                        0.8f to Color(0xFFFFD700),
+                                        1.0f to Color.Transparent
+                                    ),
+                                    style = Stroke(width = 3.dp.toPx()),
+                                )
+                            }
+                        }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EditNote,
+                        contentDescription = "Open AI Assistant",
+                        tint = Color.White
+                    )
+                }
+                Text(
+                    text = "Hey!",
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = (-40).dp)
+                        .graphicsLayer {
+                            scaleX = textScale.value
+                            scaleY = textScale.value
+                            alpha = textAlpha.value
+                        }
+                        .background(
+                            Color.White.copy(alpha = 0.9f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
+        },
+
         containerColor = Color(0xFFF8F8FF)
     ) { paddingValues ->
         LazyColumn(
@@ -171,18 +288,6 @@ fun HomeScreen(
                 PcosAssessmentCard(
                     onStartAssessmentClick = onNavigateToPcosQuiz,
                     onViewDashboardClick = {
-                        // ✅ FIX: This logic now correctly navigates to the dashboard in all cases.
-                        // The dashboard screen itself will then decide what to show.
-//                        when (pcosState) {
-//                            is AssessmentUiState.Success,
-//                            is AssessmentUiState.NoAssessment,
-//                            is AssessmentUiState.Error -> {
-//                                onNavigateToPcosDashboard()
-//                            }
-//                            is AssessmentUiState.Loading -> {
-//                                Toast.makeText(context, "Checking assessment status...", Toast.LENGTH_SHORT).show()
-//                            }
-//                        }
                         onNavigateToPcosDashboard()
                     }
                 )
@@ -199,13 +304,13 @@ fun HomeScreen(
     }
 }
 
-// ... the rest of your HomeScreen.kt file remains unchanged
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeTopAppBar(
     username: String,
     onProfileClick: () -> Unit,
-    onChatClick: () -> Unit
+    onNavigateToNote: () -> Unit
 ) {
     CenterAlignedTopAppBar(
         title = {
@@ -222,17 +327,23 @@ fun HomeTopAppBar(
                 contentDescription = "Profile Picture",
                 modifier = Modifier
                     .padding(start = 16.dp)
-                    .size(40.dp)
+                    .size(38.dp)
                     .clip(CircleShape)
+                    .background(Color(0xFFBBBDFF))
+                    .border(1.5.dp, Color(0xFFC39BE0), CircleShape)
                     .clickable { onProfileClick() }
             )
         },
         actions = {
-            IconButton(onClick = onChatClick) {
+            IconButton(onClick = onNavigateToNote) {
                 Icon(
-                    imageVector = Icons.Filled.Chat,
-                    contentDescription = "Open Chat",
-                    tint = Color(0xFF9092FF)
+                    // ✨ FIX 2: Changed icon to avoid duplicating the FAB's icon
+                    imageVector = Icons.Default.EditNote,
+                    contentDescription = "Open Notes",
+                    tint = Color(0xFF9092FF),
+                    modifier = Modifier
+                        .padding(end = 12.dp)
+                        .size(38.dp)
                 )
             }
         },
@@ -594,7 +705,8 @@ fun HomeScreenPreview() {
         onNavigateToPcosDashboard = {},
         onArticleClicked = {},
         onNavigateToEditCycle = {},
-        onNavigateToChatBot = {}
+        onNavigateToChatBot = {},
+        onNavigateToNote = {}
     )
 }
 

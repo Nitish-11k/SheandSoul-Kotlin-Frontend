@@ -1,9 +1,12 @@
 package com.example.sheandsoul_nick.features.auth.presentation
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -103,7 +106,7 @@ fun CommunityComingSoonScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommunityTopAppBar(onProfileClick: () -> Unit) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
         title = {
             Text(
                 "Community",
@@ -120,6 +123,9 @@ fun CommunityTopAppBar(onProfileClick: () -> Unit) {
                     .padding(start = 16.dp)
                     .size(40.dp)
                     .clip(CircleShape)
+                    .background(Color(0xFFE0E0FF)) // A slightly lighter background color
+                    // ✨ CHANGE 2: Replaced the almost invisible shadow with a clean border
+                    .border(1.5.dp, Color(0xFFC39BE0), CircleShape)
                     .clickable{onProfileClick()}
             )
         },
