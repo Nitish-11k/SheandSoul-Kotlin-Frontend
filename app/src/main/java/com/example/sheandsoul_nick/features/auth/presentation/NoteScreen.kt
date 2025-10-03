@@ -2,6 +2,7 @@ package com.example.sheandsoul_nick.features.auth.presentation
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,11 +16,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.data.remote.UserNoteDto
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -37,14 +40,22 @@ fun NoteScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("My Notes") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_sheandsoul_text),
+                        contentDescription = "She & Soul Logo",
+                        modifier = Modifier
+                            .width(150.dp)
+                            .height(30.dp)
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
             )
         },
         floatingActionButton = {
@@ -60,18 +71,21 @@ fun NoteScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.TopCenter
         ) {
             when (val state = uiState) {
                 is NoteUiState.Loading -> CircularProgressIndicator()
-                is NoteUiState.Error -> Text(state.message, color = Color.Red)
+                is NoteUiState.Error -> Text(state.message, color = Color.Red, modifier = Modifier.align(Alignment.Center))
                 is NoteUiState.Success -> {
                     if (state.notes.isEmpty()) {
-                        Text("You don't have any notes yet. Tap the '+' button to add one.", textAlign = TextAlign.Center)
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("You don't have any notes yet. Tap the '+' button to add one.", textAlign = TextAlign.Center)
+                        }
                     } else {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp), // Increased spacing for better shadow visibility
+                            contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
                         ) {
                             items(state.notes, key = { it.id }) { note ->
                                 NoteItem(
@@ -103,27 +117,35 @@ fun NoteItem(note: UserNoteDto, onDeleteClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        // ✅ CHANGE 1: Explicitly set the background color to white
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        // ✅ CHANGE 2: Increased the elevation for a more noticeable shadow
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // ✅ FIX: Display the note title
             Text(
                 text = note.title,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = note.content, fontSize = 16.sp, lineHeight = 24.sp, color = Color.Gray)
+            Text(text = note.content, fontSize = 16.sp, lineHeight = 24.sp, color = Color.DarkGray) // Changed color for better contrast on white
             Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                val zonedDateTime = ZonedDateTime.parse(note.createdAt)
-                val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
+                val formattedDate = try {
+                    val zonedDateTime = ZonedDateTime.parse(note.createdAt)
+                    val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
+                    zonedDateTime.format(formatter)
+                } catch (e: Exception) {
+                    note.createdAt.substringBefore("T").substringBefore(" ")
+                }
+
                 Text(
-                    text = "Created: ${zonedDateTime.format(formatter)}",
+                    text = "Created: $formattedDate",
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
@@ -144,7 +166,6 @@ fun AddNoteDialog(onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
         onDismissRequest = onDismiss,
         title = { Text("Add a New Note") },
         text = {
-            // ✅ FIX: Added fields for both title and content
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = title,

@@ -128,7 +128,17 @@ data class PcosAssessmentDetailsDto(
     @SerializedName("hasWeightGainOrObesity") val hasWeightGainOrObesity: Boolean,
     @SerializedName("hasDarkSkinPatches") val hasDarkSkinPatches: Boolean,
     @SerializedName("hasFamilyHistoryOfPCOS") val hasFamilyHistoryOfPCOS: Boolean,
-    @SerializedName("experiencesHighStress") val experiencesHighStress: Boolean
+    @SerializedName("experiencesHighStress") val experiencesHighStress: Boolean,
+    @SerializedName("hasMoodSwings") val hasMoodSwings: Boolean,
+    @SerializedName("hasSleepDisturbances") val hasSleepDisturbances: Boolean,
+    @SerializedName("experiencesFatigue") val experiencesFatigue: Boolean,
+    @SerializedName("hasStrongCravings") val hasStrongCravings: Boolean,
+    @SerializedName("hasInsulinResistance") val hasInsulinResistance: Boolean,
+    @SerializedName("hasPelvicPain") val hasPelvicPain: Boolean,
+    @SerializedName("hasFrequentHeadaches") val hasFrequentHeadaches: Boolean,
+    @SerializedName("hasDifficultyConceiving") val hasDifficultyConceiving: Boolean,
+    @SerializedName("hasHighBloodPressure") val hasHighBloodPressure: Boolean,
+    @SerializedName("hasSkinTags") val hasSkinTags: Boolean
 )
 
 // ... (keep all existing data classes)

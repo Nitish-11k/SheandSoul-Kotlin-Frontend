@@ -153,7 +153,7 @@ fun LogEntryCard(log: MenstrualCycleLogDto) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = lerp(Color(0xFFBBBDFF), Color.White, 0.3f))
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

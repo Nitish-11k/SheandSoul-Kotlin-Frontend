@@ -31,6 +31,7 @@ import com.example.sheandsoul_nick.R
 import com.example.sheandsoul_nick.data.remote.PcosAssessmentDetailsDto
 import com.example.sheandsoul_nick.ui.components.HorizontalWaveButton
 import com.example.sheandsoul_nick.ui.theme.SheAndSoulNickTheme
+import kotlin.Boolean
 
 class PcosDashboardViewModelFactory(private val authViewModel: AuthViewModel) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -190,6 +191,16 @@ private fun ReportAvailableContent(
                 AnswerRow("Dark skin patches?", details.hasDarkSkinPatches.toYesNo())
                 AnswerRow("Family history of PCOS?", details.hasFamilyHistoryOfPCOS.toYesNo())
                 AnswerRow("Experience high stress?", details.experiencesHighStress.toYesNo())
+                AnswerRow("Significant mood swings?", details.hasMoodSwings.toYesNo())
+                AnswerRow("Sleep disturbances?", details.hasSleepDisturbances.toYesNo())
+                AnswerRow("Often feel fatigued?", details.experiencesFatigue.toYesNo())
+                AnswerRow("Strong sugar cravings?", details.hasStrongCravings.toYesNo())
+                AnswerRow("Insulin resistance?", details.hasInsulinResistance.toYesNo())
+                AnswerRow("Experience pelvic pain?", details.hasPelvicPain.toYesNo())
+                AnswerRow("Frequent headaches?", details.hasFrequentHeadaches.toYesNo())
+                AnswerRow("Difficulty conceiving?", details.hasDifficultyConceiving.toYesNo())
+                AnswerRow("High blood pressure?", details.hasHighBloodPressure.toYesNo())
+                AnswerRow("Noticed skin tags?", details.hasSkinTags.toYesNo())
             }
         }
 
@@ -290,7 +301,17 @@ fun PcosDashboardScreen_WithData_Preview() {
         hasWeightGainOrObesity = true,
         hasDarkSkinPatches = false,
         hasFamilyHistoryOfPCOS = false,
-        experiencesHighStress = true
+        experiencesHighStress = true,
+        hasMoodSwings= false,
+        hasSleepDisturbances= true,
+        experiencesFatigue= false,
+        hasStrongCravings= true,
+        hasInsulinResistance= false,
+        hasPelvicPain= true,
+        hasFrequentHeadaches= false,
+        hasDifficultyConceiving= true,
+        hasHighBloodPressure= false,
+        hasSkinTags= true
     )
 
     SheAndSoulNickTheme {

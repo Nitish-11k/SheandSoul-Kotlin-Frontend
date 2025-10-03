@@ -35,7 +35,9 @@ class NoteViewModel(authViewModel: AuthViewModel) : ViewModel() {
             try {
                 val response = apiService.getNotes()
                 if (response.isSuccessful && response.body() != null) {
-                    _uiState.value = NoteUiState.Success(response.body()!!)
+                    // ✅ CHANGE 3: Sort the list by creation date, newest first.
+                    val sortedNotes = response.body()!!.sortedByDescending { it.createdAt }
+                    _uiState.value = NoteUiState.Success(sortedNotes)
                 } else {
                     _uiState.value = NoteUiState.Error("Failed to load notes.")
                 }
@@ -45,13 +47,12 @@ class NoteViewModel(authViewModel: AuthViewModel) : ViewModel() {
         }
     }
 
-    // ✅ FIX: This function now accepts and sends both title and content.
     fun createNote(title: String, content: String) {
         viewModelScope.launch {
             try {
                 val response = apiService.createNote(CreateNoteRequest(title, content))
                 if (response.isSuccessful) {
-                    // Refresh the list to show the new note
+                    // Refresh the list to show the new note at the top
                     getNotes()
                 } else {
                     // Handle error (e.g., show a toast)
