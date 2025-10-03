@@ -83,4 +83,6 @@ interface ApiService {
 
     @DELETE("api/notes/{id}")
     suspend fun deleteNote(@Path("id") noteId: Long): Response<Unit>
+    @GET("api/menstrual-logs")
+    suspend fun getMenstrualLogs(): Response<List<MenstrualCycleLogDto>>
 }

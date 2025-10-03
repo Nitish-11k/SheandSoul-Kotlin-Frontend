@@ -38,4 +38,5 @@ sealed class Screen(val route: String) {
     object EditCycle : Screen("edit_cycle")
     object Chat: Screen("chat")
     object Note : Screen("notes")
+    object MenstrualLogs : Screen("menstrual_logs")
 }

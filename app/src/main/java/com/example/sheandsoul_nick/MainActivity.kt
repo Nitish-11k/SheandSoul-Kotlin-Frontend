@@ -233,7 +233,8 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToPcosDashboard = { navController.navigate(Screen.PcosDashboard.route) },
                                 onNavigateToEditCycle = { navController.navigate(Screen.EditCycle.route) },
                                 onNavigateToChatBot = {navController.navigate(Screen.Chat.route)},
-                                onNavigateToNote = { navController.navigate(Screen.Note.route) }
+                                onNavigateToNote = { navController.navigate(Screen.Note.route) },
+                                onNavigateToLogs = { navController.navigate(Screen.MenstrualLogs.route) }
                             )
                         }
 
@@ -320,6 +321,12 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Screen.Note.route) {
                             NoteScreen(
+                                authViewModel = authViewModel,
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Screen.MenstrualLogs.route) {
+                            MenstrualLogScreen(
                                 authViewModel = authViewModel,
                                 onNavigateBack = { navController.popBackStack() }
                             )

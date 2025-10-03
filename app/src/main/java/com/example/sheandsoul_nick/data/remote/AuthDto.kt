@@ -186,9 +186,19 @@ data class ChatResponse(val response: String)
 
 data class UserNoteDto(
     @SerializedName("id") val id: Long,
+    @SerializedName("title") val title: String,
     @SerializedName("content") val content: String,
-    @SerializedName("createdAt") val createdAt: String, // Keep as String for simplicity
+    @SerializedName("createdAt") val createdAt: String,
     @SerializedName("updatedAt") val updatedAt: String
 )
 
-data class CreateNoteRequest(val content: String)
+data class CreateNoteRequest(val title: String, val content: String)
+
+data class MenstrualCycleLogDto(
+    @SerializedName("id") val id: Long,
+    @SerializedName("periodLength") val periodLength: Int,
+    @SerializedName("cycleLength") val cycleLength: Int,
+    @SerializedName("periodStartDate") val periodStartDate: String, // "YYYY-MM-DD"
+    @SerializedName("periodEndDate") val periodEndDate: String,   // "YYYY-MM-DD"
+    @SerializedName("logDate") val logDate: String              // "YYYY-MM-DD"
+)

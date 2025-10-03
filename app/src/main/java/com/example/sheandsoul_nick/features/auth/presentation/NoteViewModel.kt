@@ -45,10 +45,11 @@ class NoteViewModel(authViewModel: AuthViewModel) : ViewModel() {
         }
     }
 
-    fun createNote(content: String) {
+    // ✅ FIX: This function now accepts and sends both title and content.
+    fun createNote(title: String, content: String) {
         viewModelScope.launch {
             try {
-                val response = apiService.createNote(CreateNoteRequest(content))
+                val response = apiService.createNote(CreateNoteRequest(title, content))
                 if (response.isSuccessful) {
                     // Refresh the list to show the new note
                     getNotes()

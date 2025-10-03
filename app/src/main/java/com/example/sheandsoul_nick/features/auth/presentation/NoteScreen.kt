@@ -89,8 +89,8 @@ fun NoteScreen(
     if (showAddNoteDialog) {
         AddNoteDialog(
             onDismiss = { showAddNoteDialog = false },
-            onSave = { content ->
-                noteViewModel.createNote(content)
+            onSave = { title, content ->
+                noteViewModel.createNote(title, content)
                 showAddNoteDialog = false
             }
         )
@@ -106,7 +106,14 @@ fun NoteItem(note: UserNoteDto, onDeleteClick: () -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = note.content, fontSize = 16.sp, lineHeight = 24.sp)
+            // ✅ FIX: Display the note title
+            Text(
+                text = note.title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = note.content, fontSize = 16.sp, lineHeight = 24.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -129,24 +136,34 @@ fun NoteItem(note: UserNoteDto, onDeleteClick: () -> Unit) {
 }
 
 @Composable
-fun AddNoteDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var text by remember { mutableStateOf("") }
+fun AddNoteDialog(onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add a New Note") },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text("Your note...") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            // ✅ FIX: Added fields for both title and content
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { content = it },
+                    label = { Text("Your note...") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         },
         confirmButton = {
             Button(
-                onClick = { if (text.isNotBlank()) onSave(text) },
-                enabled = text.isNotBlank()
+                onClick = { if (title.isNotBlank() && content.isNotBlank()) onSave(title, content) },
+                enabled = title.isNotBlank() && content.isNotBlank()
             ) {
                 Text("Save")
             }
