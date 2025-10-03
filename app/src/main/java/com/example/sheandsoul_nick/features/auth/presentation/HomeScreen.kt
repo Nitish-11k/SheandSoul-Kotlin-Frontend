@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -172,7 +173,7 @@ fun HomeScreen(
                 FloatingActionButton(
                     onClick = { onNavigateToChatBot() },
                     shape = CircleShape,
-                    containerColor = Color(0xFF9092FF),
+                    containerColor = Color.White,
                     interactionSource = interactionSource,
                     modifier = Modifier
                         .graphicsLayer {
@@ -186,18 +187,21 @@ fun HomeScreen(
                                     brush = Brush.sweepGradient(
                                         0.0f to Color.Transparent,
                                         0.2f to Color.Transparent,
-                                        0.8f to Color(0xFFFFD700),
-                                        1.0f to Color.Transparent
+                                        0.8f to Color(0xFFBBBDFF),
+                                        1.0f to Color.Magenta
                                     ),
                                     style = Stroke(width = 3.dp.toPx()),
                                 )
                             }
                         }
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.EditNote,
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_bot_logo), // 👈 Change to your image file name
                         contentDescription = "Open AI Assistant",
-                        tint = Color.White
+                        // Use a ColorFilter to apply a tint, just like you did with the Icon
+//                        colorFilter = ColorFilter.tint(Color.White),
+                        // It's good practice to set a size for the image inside the button
+                        modifier = Modifier.size(65.dp)
                     )
                 }
                 Text(

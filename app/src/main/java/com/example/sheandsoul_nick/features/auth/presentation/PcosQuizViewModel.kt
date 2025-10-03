@@ -19,14 +19,14 @@ sealed class QuizResult {
     object Loading : QuizResult()
 }
 
-// Data class to define a question in our quiz
-data class Question(
-    val id: Int,
-    val text: String,
-    val answerType: AnswerType
-)
-
-enum class AnswerType { NUMBER, YES_NO }
+//// Data class to define a question in our quiz
+//data class Question(
+//    val id: Int,
+//    val text: String,
+//    val answerType: AnswerType
+//)
+//
+//enum class AnswerType { NUMBER, YES_NO }
 
 class PcosQuizViewModel(authViewModel: AuthViewModel) : ViewModel() {
 
