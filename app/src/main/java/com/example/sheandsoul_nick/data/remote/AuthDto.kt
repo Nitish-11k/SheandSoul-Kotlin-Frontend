@@ -90,7 +90,17 @@ data class PCOSAssesmentRequest(
     val hasWeightGainOrObesity: Boolean,
     val hasDarkSkinPatches: Boolean,
     val hasFamilyHistoryOfPCOS: Boolean,
-    val experiencesHighStress: Boolean
+    val experiencesHighStress: Boolean,
+    val hasMoodSwings: Boolean,
+    val hasSleepDisturbances: Boolean,
+    val experiencesFatigue: Boolean,
+    val hasStrongCravings: Boolean,
+    val hasInsulinResistance: Boolean,
+    val hasPelvicPain: Boolean,
+    val hasFrequentHeadaches: Boolean,
+    val hasDifficultyConceiving: Boolean,
+    val hasHighBloodPressure: Boolean,
+    val hasSkinTags: Boolean
 )
 
 // Response DTO from the PCOS assessment endpoint

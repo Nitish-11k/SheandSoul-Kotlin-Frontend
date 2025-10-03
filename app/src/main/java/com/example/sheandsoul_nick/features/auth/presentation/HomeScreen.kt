@@ -346,7 +346,6 @@ fun HomeTopAppBar(
                     contentDescription = "Open Notes",
                     tint = Color(0xFF9092FF),
                     modifier = Modifier
-                        .padding(end = 12.dp)
                         .size(38.dp)
                 )
             }
@@ -424,7 +423,7 @@ fun PeriodTrackerCard(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0FF))
             ) {
-                Text("Edit Cycle", color = Color(0xFF9092FF))
+                Text("Update Cycle", color = Color(0xFF9092FF))
             }
         }
     }

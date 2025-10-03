@@ -47,7 +47,17 @@ class PcosQuizViewModel(authViewModel: AuthViewModel) : ViewModel() {
         Question(7, "Do you struggle with weight gain or find it very difficult to lose weight?", AnswerType.YES_NO),
         Question(8, "Have you noticed any dark, velvety patches of skin, especially on your neck or underarms?", AnswerType.YES_NO),
         Question(9, "Does your mother or sister have a PCOS diagnosis?", AnswerType.YES_NO),
-        Question(10, "Would you describe your daily stress levels as consistently high?", AnswerType.YES_NO)
+        Question(10, "Would you describe your daily stress levels as consistently high?", AnswerType.YES_NO),
+        Question(11, "Have you noticed significant mood swings, anxiety, or feelings of depression?", AnswerType.YES_NO),
+        Question(12, "Do you experience sleep disturbances, like insomnia or sleep apnea (loud snoring)?", AnswerType.YES_NO),
+        Question(13, "Do you often feel tired or fatigued, even after a full night's sleep?", AnswerType.YES_NO),
+        Question(14, "Do you experience strong cravings for sugary foods or carbohydrates?", AnswerType.YES_NO),
+        Question(15, "Have you ever been told you have high blood sugar or insulin resistance?", AnswerType.YES_NO),
+        Question(16, "Do you experience pelvic pain, especially during or between your periods?", AnswerType.YES_NO),
+        Question(17, "Do you get frequent headaches?", AnswerType.YES_NO),
+        Question(18, "Have you had difficulty conceiving?", AnswerType.YES_NO),
+        Question(19, "Have you been diagnosed with high blood pressure?", AnswerType.YES_NO),
+        Question(20, "Have you noticed small, soft skin growths (skin tags), particularly on your neck or in your armpits?", AnswerType.YES_NO)
     )
 
     // A map to store the user's answers, linking question ID to the answer
@@ -68,7 +78,17 @@ class PcosQuizViewModel(authViewModel: AuthViewModel) : ViewModel() {
                     hasWeightGainOrObesity = answers[7] as? Boolean ?: false,
                     hasDarkSkinPatches = answers[8] as? Boolean ?: false,
                     hasFamilyHistoryOfPCOS = answers[9] as? Boolean ?: false,
-                    experiencesHighStress = answers[10] as? Boolean ?: false
+                    experiencesHighStress = answers[10] as? Boolean ?: false,
+                    hasMoodSwings = answers[11] as? Boolean ?: false,
+                    hasSleepDisturbances = answers[12] as? Boolean ?: false,
+                    experiencesFatigue = answers[13] as? Boolean ?: false,
+                    hasStrongCravings = answers[14] as? Boolean ?: false,
+                    hasInsulinResistance = answers[15] as? Boolean ?: false,
+                    hasPelvicPain = answers[16] as? Boolean ?: false,
+                    hasFrequentHeadaches = answers[17] as? Boolean ?: false,
+                    hasDifficultyConceiving = answers[18] as? Boolean ?: false,
+                    hasHighBloodPressure = answers[19] as? Boolean ?: false,
+                    hasSkinTags = answers[20] as? Boolean ?: false
                 )
 
                 val response = apiService.submitPcosAssessment(request)
