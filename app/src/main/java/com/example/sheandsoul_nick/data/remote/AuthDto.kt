@@ -182,3 +182,13 @@ data class UserProfileDto(
 
 data class ChatRequest(val message: String)
 data class ChatResponse(val response: String)
+// ... at the end of AuthDto.kt
+
+data class UserNoteDto(
+    @SerializedName("id") val id: Long,
+    @SerializedName("content") val content: String,
+    @SerializedName("createdAt") val createdAt: String, // Keep as String for simplicity
+    @SerializedName("updatedAt") val updatedAt: String
+)
+
+data class CreateNoteRequest(val content: String)

@@ -2,6 +2,7 @@ package com.example.sheandsoul_nick.data.remote
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -71,4 +72,15 @@ interface ApiService {
     suspend fun getUserProfile(): Response<UserProfileDto>
     @POST("api/chat")
     suspend fun sendMessageToChat(@Body request: ChatRequest): Response<ChatResponse>
+
+    // ... inside the ApiService interface
+
+    @GET("api/notes")
+    suspend fun getNotes(): Response<List<UserNoteDto>>
+
+    @POST("api/notes")
+    suspend fun createNote(@Body request: CreateNoteRequest): Response<UserNoteDto>
+
+    @DELETE("api/notes/{id}")
+    suspend fun deleteNote(@Path("id") noteId: Long): Response<Unit>
 }

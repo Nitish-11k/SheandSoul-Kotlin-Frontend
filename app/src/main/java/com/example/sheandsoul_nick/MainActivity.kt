@@ -233,7 +233,7 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToPcosDashboard = { navController.navigate(Screen.PcosDashboard.route) },
                                 onNavigateToEditCycle = { navController.navigate(Screen.EditCycle.route) },
                                 onNavigateToChatBot = {navController.navigate(Screen.Chat.route)},
-                                onNavigateToNote = {}
+                                onNavigateToNote = { navController.navigate(Screen.Note.route) }
                             )
                         }
 
@@ -314,6 +314,12 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Screen.Chat.route) {
                             ChatScreen(
+                                authViewModel = authViewModel,
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Screen.Note.route) {
+                            NoteScreen(
                                 authViewModel = authViewModel,
                                 onNavigateBack = { navController.popBackStack() }
                             )
