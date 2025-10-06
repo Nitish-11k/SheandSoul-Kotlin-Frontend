@@ -48,6 +48,7 @@ class PcosDashboardViewModelFactory(private val authViewModel: AuthViewModel) : 
 fun PcosDashboardScreen(
     authViewModel: AuthViewModel,
     onNavigateBack: () -> Unit,
+    onTakeAppointmentClick: () -> Unit,
     onStartAssessment: () -> Unit
 ) {
     val viewModel: PcosDashboardViewModel = viewModel(factory = PcosDashboardViewModelFactory(authViewModel))
@@ -63,6 +64,7 @@ fun PcosDashboardScreen(
         assessmentState = state,
         onNavigateBack = onNavigateBack,
         onStartAssessment = onStartAssessment,
+        onTakeAppointmentClick = onTakeAppointmentClick,
         onDownloadClick = {
             val token = authViewModel.token
             if (token != null) {
@@ -81,6 +83,7 @@ fun PcosDashboardScreenContent(
     assessmentState: AssessmentUiState,
     onNavigateBack: () -> Unit,
     onStartAssessment: () -> Unit,
+    onTakeAppointmentClick: () -> Unit,
     onDownloadClick: () -> Unit
 ) {
     Scaffold(
@@ -110,7 +113,8 @@ fun PcosDashboardScreenContent(
                         username = username,
                         details = assessmentState.details,
                         onDownloadClick = onDownloadClick,
-                        onRetakeAssessmentClick = onStartAssessment
+                        onRetakeAssessmentClick = onStartAssessment,
+                        onTakeAppointmentClick = onTakeAppointmentClick
                     )
                 }
                 is AssessmentUiState.NoAssessment -> {
@@ -148,7 +152,8 @@ private fun ReportAvailableContent(
     username: String,
     details: PcosAssessmentDetailsDto,
     onDownloadClick: () -> Unit, // This parameter is no longer used but safe to keep
-    onRetakeAssessmentClick: () -> Unit
+    onRetakeAssessmentClick: () -> Unit,
+    onTakeAppointmentClick: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -214,6 +219,16 @@ private fun ReportAvailableContent(
             ) {
                 Text("Re-take Assessment", color = Color(0xFF9092FF))
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalWaveButton(
+                onClick = onTakeAppointmentClick,
+                text = "Take an Appointment",
+                startColor = Color(0xFFBBBDFF),
+                endColor = Color(0xFF9092FF),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            )
             Spacer(modifier = Modifier.height(24.dp))
             // ✅ --- END OF FIX --- ✅
         }
@@ -281,7 +296,8 @@ fun PcosDashboardScreen_NoData_Preview() {
             assessmentState = AssessmentUiState.NoAssessment,
             onNavigateBack = {},
             onStartAssessment = {},
-            onDownloadClick = {}
+            onDownloadClick = {},
+            onTakeAppointmentClick = {}
         )
     }
 }
@@ -320,7 +336,8 @@ fun PcosDashboardScreen_WithData_Preview() {
             assessmentState = AssessmentUiState.Success(sampleDetails),
             onNavigateBack = {},
             onStartAssessment = {},
-            onDownloadClick = {}
+            onDownloadClick = {},
+            onTakeAppointmentClick = {}
         )
     }
 }

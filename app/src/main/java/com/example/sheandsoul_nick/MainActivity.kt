@@ -234,7 +234,8 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToEditCycle = { navController.navigate(Screen.EditCycle.route) },
                                 onNavigateToChatBot = {navController.navigate(Screen.Chat.route)},
                                 onNavigateToNote = { navController.navigate(Screen.Note.route) },
-                                onNavigateToLogs = { navController.navigate(Screen.MenstrualLogs.route) }
+                                onNavigateToLogs = { navController.navigate(Screen.MenstrualLogs.route) },
+                                onNavigateToShop = { navController.navigate(Screen.Shop.route) }
                             )
                         }
 
@@ -300,8 +301,12 @@ class MainActivity : ComponentActivity() {
                             PcosDashboardScreen(
                                 authViewModel = authViewModel,
                                 onNavigateBack = { navController.popBackStack() },
-                                onStartAssessment = { navController.navigate(Screen.PcosQuiz.route) }
+                                onStartAssessment = { navController.navigate(Screen.PcosQuiz.route) },
+                                onTakeAppointmentClick = { navController.navigate(Screen.Appointment.route) }
                             )
+                        }
+                        composable(Screen.Appointment.route) {
+                            AppointmentComingSoonScreen(onGoBack = { navController.popBackStack() })
                         }
                         composable(Screen.Profile.route) {
                             ProfileScreen(
@@ -329,6 +334,11 @@ class MainActivity : ComponentActivity() {
                             MenstrualLogScreen(
                                 authViewModel = authViewModel,
                                 onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Screen.Shop.route) {
+                            ShopComingSoonScreen (
+                                onGoBack = { navController.popBackStack() }
                             )
                         }
                     }

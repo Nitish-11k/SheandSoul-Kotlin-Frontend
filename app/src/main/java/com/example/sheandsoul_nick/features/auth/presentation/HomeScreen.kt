@@ -76,6 +76,7 @@ fun HomeScreen(
     onNavigateToNote: () -> Unit,
     onNavigateToChatBot: () -> Unit,
     onNavigateToLogs: () -> Unit,
+    onNavigateToShop: () -> Unit,
     authViewModel: AuthViewModel = viewModel()
 ) {
     val articleViewModel: ArticleViewModel = viewModel(factory = ArticleViewModelFactory(authViewModel))
@@ -91,11 +92,15 @@ fun HomeScreen(
         }
     }
 
-    val username by remember { derivedStateOf { authViewModel.name.ifEmpty { "User" } } }
+    val displayName by remember {
+        derivedStateOf {
+            authViewModel.nickname.ifBlank { authViewModel.name }.ifEmpty { "User" }
+        }
+    }
     Scaffold(
         topBar = {
             HomeTopAppBar(
-                username = username,
+                username = displayName,
                 onProfileClick = onProfileClick,
                 onNavigateToNote = onNavigateToNote
             )
@@ -108,7 +113,6 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            // --- ANIMATION STATES ---
             val infiniteTransition = rememberInfiniteTransition(label = "border_rotation")
             val angle by infiniteTransition.animateFloat(
                 initialValue = 0f,
@@ -133,26 +137,17 @@ fun HomeScreen(
 
             LaunchedEffect(Unit) {
                 delay(1000)
-                coroutineScope { // Use coroutineScope to launch animations concurrently
-                    launch {
-                        textAlpha.animateTo(1f, tween(300))
-                    }
-                    launch {
-                        textScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
-                    }
+                coroutineScope {
+                    launch { textAlpha.animateTo(1f, tween(300)) }
+                    launch { textScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
                 }
                 delay(1500)
                 coroutineScope {
-                    launch {
-                        textAlpha.animateTo(0f, tween(500))
-                    }
-                    launch {
-                        textScale.animateTo(1.2f, tween(500))
-                    }
+                    launch { textAlpha.animateTo(0f, tween(500)) }
+                    launch { textScale.animateTo(1.2f, tween(500)) }
                 }
             }
 
-            // --- UI STRUCTURE ---
             Box(contentAlignment = Alignment.Center) {
                 FloatingActionButton(
                     onClick = { onNavigateToChatBot() },
@@ -228,17 +223,61 @@ fun HomeScreen(
                     }
                     is MenstrualResult.Success -> {
                         val today = LocalDate.now()
-                        val nextPeriodDate = LocalDate.parse(result.data.nextPeriodStartDate)
-                        val daysLeft = ChronoUnit.DAYS.between(today, nextPeriodDate).coerceAtLeast(0)
-                        val totalCycleDays = authViewModel.cycle_length.takeIf { it > 0 } ?: 28
+                        val data = result.data
+                        val totalCycleDays = (authViewModel.cycle_length.takeIf { it > 0 } ?: 28).toLong()
+
+                        // Parse NEXT cycle dates from API
+                        val nextPeriodStart = LocalDate.parse(data.nextPeriodStartDate)
+                        val nextPeriodEnd = LocalDate.parse(data.nextPeriodEndDate)
+                        val nextFollicularStart = LocalDate.parse(data.nextFollicularStartDate)
+                        val nextFollicularEnd = LocalDate.parse(data.nextFollicularEndDate)
+                        val nextOvulationStart = LocalDate.parse(data.nextOvulationDate)
+                        val nextOvulationEnd = LocalDate.parse(data.nextOvulationEndDate)
+                        val nextLutealStart = LocalDate.parse(data.nextLutealStartDate)
+                        val nextLutealEnd = LocalDate.parse(data.nextLutealEndDate)
+
+                        // ✅ **START FIX**: Estimate CURRENT phase dates by subtracting one cycle length
+                        val currentPeriodStart = nextPeriodStart.minusDays(totalCycleDays)
+                        val currentPeriodEnd = nextPeriodEnd.minusDays(totalCycleDays)
+                        val currentFollicularStart = nextFollicularStart.minusDays(totalCycleDays)
+                        val currentFollicularEnd = nextFollicularEnd.minusDays(totalCycleDays)
+                        val currentOvulationStart = nextOvulationStart.minusDays(totalCycleDays)
+                        val currentOvulationEnd = nextOvulationEnd.minusDays(totalCycleDays)
+                        val currentLutealStart = nextLutealStart.minusDays(totalCycleDays)
+                        val currentLutealEnd = nextLutealEnd.minusDays(totalCycleDays)
+
+                        // ✅ **FIX**: Determine current phase using the corrected dates
+                        val currentPhaseName = when {
+                            !today.isBefore(currentPeriodStart) && !today.isAfter(currentPeriodEnd) -> "Menstrual"
+                            !today.isBefore(currentOvulationStart) && !today.isAfter(currentOvulationEnd) -> "Ovulation"
+                            !today.isBefore(currentLutealStart) && !today.isAfter(currentLutealEnd) -> "Luteal"
+                            !today.isBefore(currentFollicularStart) && !today.isAfter(currentFollicularEnd) -> "Follicular"
+                            else -> "Your Cycle"
+                        }
+                        // ✅ **END FIX**
+
+                        // Calculate durations for the visual representation
+                        val periodDuration = ChronoUnit.DAYS.between(nextPeriodStart, nextPeriodEnd).toInt() + 1
+                        val follicularDuration = ChronoUnit.DAYS.between(nextPeriodEnd.plusDays(1), nextOvulationStart.minusDays(1)).toInt() + 1
+                        val ovulationDuration = ChronoUnit.DAYS.between(nextOvulationStart, nextOvulationEnd).toInt() + 1
+                        val lutealDuration = totalCycleDays.toInt() - periodDuration - follicularDuration - ovulationDuration
+
+                        // Calculate progress
+                        val daysLeft = ChronoUnit.DAYS.between(today, nextPeriodStart).coerceAtLeast(0)
                         val progress = 1.0f - (daysLeft.toFloat() / totalCycleDays)
 
                         PeriodTrackerCard(
                             daysLeft = daysLeft.toInt(),
                             progress = progress.coerceIn(0f, 1f),
-                            nextPeriodDateString = "${LocalDate.parse(result.data.nextPeriodStartDate).format(DateTimeFormatter.ofPattern("MMM dd"))} - ${LocalDate.parse(result.data.nextPeriodEndDate).format(DateTimeFormatter.ofPattern("dd"))}",
+                            nextPeriodDateString = "${nextPeriodStart.format(DateTimeFormatter.ofPattern("MMM dd"))} - ${nextPeriodEnd.format(DateTimeFormatter.ofPattern("dd"))}",
                             onEditCycleClick = onNavigateToEditCycle,
-                            onViewLogsClick = onNavigateToLogs
+                            onViewLogsClick = onNavigateToLogs,
+                            currentPhaseName = currentPhaseName,
+                            periodDuration = periodDuration,
+                            follicularDuration = follicularDuration,
+                            ovulationDuration = ovulationDuration,
+                            lutealDuration = lutealDuration,
+                            totalCycleDays = totalCycleDays.toInt()
                         )
                     }
                     is MenstrualResult.Error, null -> {
@@ -247,7 +286,13 @@ fun HomeScreen(
                             progress = 0f,
                             nextPeriodDateString = "No data",
                             onEditCycleClick = onNavigateToEditCycle,
-                            onViewLogsClick = onNavigateToLogs
+                            onViewLogsClick = onNavigateToLogs,
+                            currentPhaseName = "Your Cycle",
+                            periodDuration = 5,
+                            follicularDuration = 8,
+                            ovulationDuration = 4,
+                            lutealDuration = 11,
+                            totalCycleDays = 28
                         )
                     }
                 }
@@ -274,9 +319,7 @@ fun HomeScreen(
             item {
                 PcosAssessmentCard(
                     onStartAssessmentClick = onNavigateToPcosQuiz,
-                    onViewDashboardClick = {
-                        onNavigateToPcosDashboard()
-                    }
+                    onViewDashboardClick = { onNavigateToPcosDashboard() }
                 )
             }
             item {
@@ -285,6 +328,9 @@ fun HomeScreen(
                     onViewAllClicked = onNavigateToArticles,
                     onArticleClicked = onArticleClicked
                 )
+            }
+            item {
+                ShopCard(onClick = onNavigateToShop)
             }
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
@@ -327,8 +373,7 @@ fun HomeTopAppBar(
                     imageVector = Icons.Default.EditNote,
                     contentDescription = "Open Notes",
                     tint = Color(0xFF9092FF),
-                    modifier = Modifier
-                        .size(38.dp)
+                    modifier = Modifier.size(38.dp)
                 )
             }
         },
@@ -344,7 +389,13 @@ fun PeriodTrackerCard(
     progress: Float,
     nextPeriodDateString: String,
     onEditCycleClick: () -> Unit,
-    onViewLogsClick: () -> Unit
+    onViewLogsClick: () -> Unit,
+    currentPhaseName: String,
+    periodDuration: Int,
+    follicularDuration: Int,
+    ovulationDuration: Int,
+    lutealDuration: Int,
+    totalCycleDays: Int
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val circleDiameter = screenWidth * 0.55f
@@ -376,13 +427,55 @@ fun PeriodTrackerCard(
                     modifier = Modifier.size(circleDiameter)
                 ) {
                     Canvas(modifier = Modifier.fillMaxSize()) {
+                        val menstrualColor = Color(0xFFE57373) // Light Red
+                        val follicularColor = Color(0xFF81D4FA) // Light Blue
+                        val ovulationColor = Color(0xFFBA68C8)   // Light Purple
+                        val lutealColor = Color(0xFFFFD54F)      // Light Yellow
+
+                        val anglePerDay = if (totalCycleDays > 0) 360f / totalCycleDays.toFloat() else 0f
+
+                        val periodSweep = periodDuration * anglePerDay
+                        val follicularSweep = follicularDuration * anglePerDay
+                        val ovulationSweep = ovulationDuration * anglePerDay
+                        val lutealSweep = (totalCycleDays - periodDuration - follicularDuration - ovulationDuration) * anglePerDay
+
+                        var startAngle = -90f
+
                         drawArc(
-                            color = Color(0xFFE0E0FF),
-                            startAngle = -90f,
-                            sweepAngle = 360f,
+                            color = menstrualColor,
+                            startAngle = startAngle,
+                            sweepAngle = periodSweep,
                             useCenter = false,
-                            style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round)
+                            style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Butt)
                         )
+                        startAngle += periodSweep
+
+                        drawArc(
+                            color = follicularColor,
+                            startAngle = startAngle,
+                            sweepAngle = follicularSweep,
+                            useCenter = false,
+                            style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Butt)
+                        )
+                        startAngle += follicularSweep
+
+                        drawArc(
+                            color = ovulationColor,
+                            startAngle = startAngle,
+                            sweepAngle = ovulationSweep,
+                            useCenter = false,
+                            style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Butt)
+                        )
+                        startAngle += ovulationSweep
+
+                        drawArc(
+                            color = lutealColor,
+                            startAngle = startAngle,
+                            sweepAngle = lutealSweep,
+                            useCenter = false,
+                            style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Butt)
+                        )
+
                         drawArc(
                             color = Color(0xFF9092FF),
                             startAngle = -90f,
@@ -407,6 +500,13 @@ fun PeriodTrackerCard(
                         )
                         Text("Days Left", fontSize = 14.sp, color = Color.Gray)
                         Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Phase: $currentPhaseName",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.DarkGray
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(nextPeriodDateString, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -422,8 +522,6 @@ fun PeriodTrackerCard(
         }
     }
 }
-// ... (The rest of the file remains the same as your original)
-// FertilityCard, AddPartnerCard, PcosAssessmentCard, CuratedForYouSection, ArticleCard, AppBottomNavBar, BottomNavIcon
 @Composable
 fun FertilityCard(
     daysLeft: Int,
@@ -648,6 +746,57 @@ fun CuratedForYouSection(
                     CircularProgressIndicator()
                 }
             }
+        }
+    }
+}
+@Composable
+fun ShopCard(onClick: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ){
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(Color(0xFFC2A3FF), Color(0xFF9092FF))
+                    )
+                )
+                .clickable { onClick() },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(24.dp)
+            ) {
+                Text("Visit Our Shop", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Find products curated for your wellness journey.", color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
+                Button(
+                    onClick = { onClick() },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White.copy(alpha = 0.3f),
+                        contentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text("Coming Soon")
+                }
+            }
+            Image(
+                painter = painterResource(id = R.drawable.ic_shop_bgc), // Using a generic logo
+                contentDescription = "Shop Icon",
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(130.dp)
+                    .height(80.dp),
+//                    .padding(16.dp),
+                contentScale = ContentScale.Fit
+            )
         }
     }
 }
