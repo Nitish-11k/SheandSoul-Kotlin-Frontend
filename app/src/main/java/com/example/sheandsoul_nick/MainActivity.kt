@@ -358,4 +358,3 @@ fun SplashScreen() {
         CircularProgressIndicator()
     }
 }
-

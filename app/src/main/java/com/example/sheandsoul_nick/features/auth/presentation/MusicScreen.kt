@@ -340,7 +340,7 @@ fun MusicTopAppBar(onProfileClick: () -> Unit) {
                     // ✨ CHANGE 2: Replaced the almost invisible shadow with a clean border
                     .border(1.5.dp, Color(0xFFC39BE0), CircleShape)
                     .clickable { onProfileClick()}
-                        )
+            )
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
     )

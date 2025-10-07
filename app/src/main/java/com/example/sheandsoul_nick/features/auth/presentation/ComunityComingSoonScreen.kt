@@ -67,7 +67,7 @@ fun CommunityComingSoonScreen(
                     .height(50.dp)
                     .alpha(0.4f),
 
-            )
+                )
 
             Spacer(modifier = Modifier.height(28.dp))
 

@@ -86,6 +86,7 @@ dependencies {
     implementation(libs.androidx.animation.core)
     implementation(libs.androidx.ui.test)
     implementation(libs.ui.graphics)
+    implementation(libs.androidx.compose.ui)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
 //    androidTestImplementation(libs.androidx.espresso.core)

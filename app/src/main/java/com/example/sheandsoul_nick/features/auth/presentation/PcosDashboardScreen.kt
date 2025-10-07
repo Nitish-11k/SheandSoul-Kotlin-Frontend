@@ -222,7 +222,7 @@ private fun ReportAvailableContent(
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalWaveButton(
                 onClick = onTakeAppointmentClick,
-                text = "Take an Appointment",
+                text = "Consult a Doctor",
                 startColor = Color(0xFFBBBDFF),
                 endColor = Color(0xFF9092FF),
                 modifier = Modifier
