@@ -41,7 +41,7 @@ fun AppointmentComingSoonScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         Image(
-            painter = painterResource(id = R.drawable.ic_female_doctor_avtar), // Using a generic placeholder icon
+            painter = painterResource(id = R.drawable.ic_doctor), // Using a generic placeholder icon
             contentDescription = "Coming Soon Illustration",
             modifier = Modifier
                 .size(400.dp)

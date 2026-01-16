@@ -77,6 +77,7 @@ fun HomeScreen(
     onNavigateToChatBot: () -> Unit,
     onNavigateToLogs: () -> Unit,
     onNavigateToShop: () -> Unit,
+    onConsultDoctorClick: () -> Unit,
     authViewModel: AuthViewModel = viewModel()
 ) {
     val articleViewModel: ArticleViewModel = viewModel(factory = ArticleViewModelFactory(authViewModel))
@@ -236,7 +237,6 @@ fun HomeScreen(
                         val nextLutealStart = LocalDate.parse(data.nextLutealStartDate)
                         val nextLutealEnd = LocalDate.parse(data.nextLutealEndDate)
 
-                        // ✅ **START FIX**: Estimate CURRENT phase dates by subtracting one cycle length
                         val currentPeriodStart = nextPeriodStart.minusDays(totalCycleDays)
                         val currentPeriodEnd = nextPeriodEnd.minusDays(totalCycleDays)
                         val currentFollicularStart = nextFollicularStart.minusDays(totalCycleDays)
@@ -246,7 +246,6 @@ fun HomeScreen(
                         val currentLutealStart = nextLutealStart.minusDays(totalCycleDays)
                         val currentLutealEnd = nextLutealEnd.minusDays(totalCycleDays)
 
-                        // ✅ **FIX**: Determine current phase using the corrected dates
                         val currentPhaseName = when {
                             !today.isBefore(currentPeriodStart) && !today.isAfter(currentPeriodEnd) -> "Menstrual"
                             !today.isBefore(currentOvulationStart) && !today.isAfter(currentOvulationEnd) -> "Ovulation"
@@ -254,15 +253,12 @@ fun HomeScreen(
                             !today.isBefore(currentFollicularStart) && !today.isAfter(currentFollicularEnd) -> "Follicular"
                             else -> "Your Cycle"
                         }
-                        // ✅ **END FIX**
 
-                        // Calculate durations for the visual representation
                         val periodDuration = ChronoUnit.DAYS.between(nextPeriodStart, nextPeriodEnd).toInt() + 1
                         val follicularDuration = ChronoUnit.DAYS.between(nextPeriodEnd.plusDays(1), nextOvulationStart.minusDays(1)).toInt() + 1
                         val ovulationDuration = ChronoUnit.DAYS.between(nextOvulationStart, nextOvulationEnd).toInt() + 1
                         val lutealDuration = totalCycleDays.toInt() - periodDuration - follicularDuration - ovulationDuration
 
-                        // Calculate progress
                         val daysLeft = ChronoUnit.DAYS.between(today, nextPeriodStart).coerceAtLeast(0)
                         val progress = 1.0f - (daysLeft.toFloat() / totalCycleDays)
 
@@ -321,6 +317,9 @@ fun HomeScreen(
                     onStartAssessmentClick = onNavigateToPcosQuiz,
                     onViewDashboardClick = { onNavigateToPcosDashboard() }
                 )
+            }
+            item {
+                ConsultDoctorCard(onClick = onConsultDoctorClick)
             }
             item {
                 CuratedForYouSection(
@@ -686,6 +685,57 @@ fun PcosAssessmentCard(
 }
 
 @Composable
+fun ConsultDoctorCard(onClick: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }, // The whole card is clickable
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ){
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(Color(0xFFBBBDFF), Color(0xFF9092FF)) // Using a purple gradient
+                    )
+                ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(24.dp)
+            ) {
+                Text("Consult a Doctor", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Book a session with trusted healthcare professionals.", color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
+                Button(
+                    onClick = { onClick() },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White.copy(alpha = 0.3f),
+                        contentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text("Book Now")
+                }
+            }
+            Image(
+                painter = painterResource(id = R.drawable.ic_doctor),
+                contentDescription = "Doctor Avatar",
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(130.dp),
+                contentScale = ContentScale.Fit // This ensures the image fits without cropping
+            )
+        }
+    }
+}
+
+@Composable
 fun CuratedForYouSection(
     articlesState: DataState<List<ArticleCategoryDto>>?,
     onViewAllClicked: () -> Unit,
@@ -788,13 +838,13 @@ fun ShopCard(onClick: () -> Unit) {
                 }
             }
             Image(
-                painter = painterResource(id = R.drawable.ic_shop_bgc), // Using a generic logo
+                painter = painterResource(id = R.drawable.ic_market), // Using a generic logo
                 contentDescription = "Shop Icon",
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(130.dp)
                     .height(80.dp),
-//                    .padding(16.dp),
+//                  .padding(16.dp),
                 contentScale = ContentScale.Fit
             )
         }

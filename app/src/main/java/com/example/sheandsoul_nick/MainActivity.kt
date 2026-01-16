@@ -235,7 +235,8 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToChatBot = {navController.navigate(Screen.Chat.route)},
                                 onNavigateToNote = { navController.navigate(Screen.Note.route) },
                                 onNavigateToLogs = { navController.navigate(Screen.MenstrualLogs.route) },
-                                onNavigateToShop = { navController.navigate(Screen.Shop.route) }
+                                onNavigateToShop = { navController.navigate(Screen.Shop.route) },
+                                onConsultDoctorClick = { navController.navigate(Screen.Appointment.route) }
                             )
                         }
 

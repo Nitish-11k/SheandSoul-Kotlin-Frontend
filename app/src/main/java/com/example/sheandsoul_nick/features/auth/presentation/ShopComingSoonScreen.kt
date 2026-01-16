@@ -42,7 +42,7 @@ fun ShopComingSoonScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         Image(
-            painter = painterResource(id = R.drawable.ic_shop_bgc), // A generic logo for placeholder
+            painter = painterResource(id = R.drawable.ic_market), // A generic logo for placeholder
             contentDescription = "Coming Soon Illustration",
             modifier = Modifier
                 .size(260.dp)
